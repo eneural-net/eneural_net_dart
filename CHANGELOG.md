@@ -1,6 +1,8 @@
 ## 1.0.1
 
-- Improve `README.md`:
+- `README.md`:
+  - Improve text.
+  - Improve activation function text.
   - Fix example.
 
 ## 1.0.0

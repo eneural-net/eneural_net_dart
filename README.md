@@ -137,8 +137,10 @@ is an experimental implementation to exercise an `ANN` based in integers.
   
   The classic Sigmoid function (return for `x` a value between `0.0` and `1.0`):
   
-  ```
-  1 / (1 + exp(-x))
+  ```dart
+  activation(double x) {
+    return 1 / (1 + exp(-x)) ;
+  }
   ```
   
 
@@ -147,16 +149,33 @@ is an experimental implementation to exercise an `ANN` based in integers.
   
   Fast approximation version of Sigmoid function, that is not based in [exp(x)][dart_math_exp]:
 
+  ```dart
+  activation(double x) {
+    x *= 3 ;
+    return 0.5 + ((x) / (2.5 + x.abs()) / 2) ;
+  }
   ```
-  x *= 3;
-  0.5 + ((x) / (2.5 + x.abs()) / 2);
-  ```
+  Function author: Graciliano M. Passos: [gmpassos@GitHub][github].  
+
 
 - `ActivationFunctionSigmoidBoundedFast`:
 
   Fast approximation version of Sigmoid function, that is not based in [exp(x)][dart_math_exp],
   bounded to a lower and upper limit for [x].
-  
+
+  ```dart
+  activation(double x) {
+    if (x < lowerLimit) {
+      return 0.0 ;
+    } else if (x > upperLimit) {
+      return 1.0 ;
+    }
+    x = x / scale ;
+    return 0.5 + (x / (1 + (x * x))) ;
+  }
+  ```
+
+  Function author: Graciliano M. Passos: [gmpassos@GitHub][github].
 
 ## exp(x)
 
@@ -174,7 +193,7 @@ for implementations that are just an approximation.
 
 # eNeural.net
 
-You can find more at address [eneural.net][eNeural.net]
+You can find more at: [eneural.net][eNeural.net]
 
 [eNeural.net]: https://eneural.net/
 
