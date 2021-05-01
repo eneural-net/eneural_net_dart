@@ -24,7 +24,7 @@ void main() {
   var ann = ANN(
     scale,
     LayerFloat32x4(2, activationFunction), // Input layer: 2 neurons
-    [3],                                   // 1 Hidden layer: 3 neurons
+    [3], // 1 Hidden layer: 3 neurons
     LayerFloat32x4(1, activationFunction), // Output layer: 1 neuron
   );
 

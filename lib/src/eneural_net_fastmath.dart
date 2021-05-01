@@ -1,18 +1,16 @@
 /*
-
-THIS FAST MATH FUNCTIONS ARE BASED IN THE DART PACKAGE `complex`:
+THIS FAST MATH FUNCTIONS ARE BASED IN THE DART PACKAGE `Complex`:
   - https://pub.dev/packages/complex
   - https://github.com/rwl/complex
   - LICENSE: Apache License - Version 2.0 (http://www.apache.org/licenses/)
-
  */
 
-import 'dart:math' as math;
+import 'dart:math' as dart_math;
 
 import 'eneural_net_fastmath_tables.dart';
 
 /// The `logMaxValue` is the natural logarithm of `doubel.maxFinite`
-final logMaxValue = math.log(double.maxFinite);
+final logMaxValue = dart_math.log(double.maxFinite);
 
 /// `0x40000000` - used to split a double into two parts, both with the low
 /// order bits cleared. Equivalent to `2^30`.
@@ -55,7 +53,7 @@ double cosh(double x) {
   if (x > 20) {
     if (x >= logMaxValue) {
       // Avoid overflow (MATH-905).
-      final t = math.exp(0.5 * x);
+      final t = dart_math.exp(0.5 * x);
       return (0.5 * t) * t;
     } else {
       return 0.5 * expHighPrecision(x);
@@ -208,8 +206,9 @@ double exp(double x) {
 ///
 /// [x] is the original argument of the exponential function.
 /// [extra] bits of precision on input (To Be Confirmed).
-/// [hiPrec] extra bits of precision on output (To Be Confirmed)
-double expHighPrecision(double x, [double extra = 0.0, List<double>? hiPrec]) {
+/// [highPrecision] extra bits of precision on output (To Be Confirmed)
+double expHighPrecision(double x,
+    [double extra = 0.0, List<double>? highPrecision]) {
   double intPartA;
   double intPartB;
   int intVal;
@@ -221,31 +220,31 @@ double expHighPrecision(double x, [double extra = 0.0, List<double>? hiPrec]) {
     intVal = -x.toInt();
 
     if (intVal > 746) {
-      if (hiPrec != null) {
-        hiPrec[0] = 0.0;
-        hiPrec[1] = 0.0;
+      if (highPrecision != null) {
+        highPrecision[0] = 0.0;
+        highPrecision[1] = 0.0;
       }
       return 0.0;
     }
 
     if (intVal > 709) {
       // This will produce a subnormal output
-      final result = expHighPrecision(x + 40.19140625, extra, hiPrec) /
+      final result = expHighPrecision(x + 40.19140625, extra, highPrecision) /
           285040095144011776.0;
-      if (hiPrec != null) {
-        hiPrec[0] /= 285040095144011776.0;
-        hiPrec[1] /= 285040095144011776.0;
+      if (highPrecision != null) {
+        highPrecision[0] /= 285040095144011776.0;
+        highPrecision[1] /= 285040095144011776.0;
       }
       return result;
     }
 
     if (intVal == 709) {
       // exp(1.494140625) is nearly a machine number...
-      final result = expHighPrecision(x + 1.494140625, extra, hiPrec) /
+      final result = expHighPrecision(x + 1.494140625, extra, highPrecision) /
           4.455505956692756620;
-      if (hiPrec != null) {
-        hiPrec[0] /= 4.455505956692756620;
-        hiPrec[1] /= 4.455505956692756620;
+      if (highPrecision != null) {
+        highPrecision[0] /= 4.455505956692756620;
+        highPrecision[1] /= 4.455505956692756620;
       }
       return result;
     }
@@ -258,9 +257,9 @@ double expHighPrecision(double x, [double extra = 0.0, List<double>? hiPrec]) {
     intVal = -intVal;
   } else {
     if (x == double.infinity) {
-      if (hiPrec != null) {
-        hiPrec[0] = double.infinity;
-        hiPrec[1] = 0.0;
+      if (highPrecision != null) {
+        highPrecision[0] = double.infinity;
+        highPrecision[1] = 0.0;
       }
       return double.infinity;
     }
@@ -268,9 +267,9 @@ double expHighPrecision(double x, [double extra = 0.0, List<double>? hiPrec]) {
     intVal = x.toInt();
 
     if (intVal > 709) {
-      if (hiPrec != null) {
-        hiPrec[0] = double.infinity;
-        hiPrec[1] = 0.0;
+      if (highPrecision != null) {
+        highPrecision[0] = double.infinity;
+        highPrecision[1] = 0.0;
       }
       return double.infinity;
     }
@@ -325,10 +324,10 @@ double expHighPrecision(double x, [double extra = 0.0, List<double>? hiPrec]) {
     result = tempC * z + tempB + tempA;
   }
 
-  if (hiPrec != null) {
+  if (highPrecision != null) {
     // If requesting high precision
-    hiPrec[0] = tempA;
-    hiPrec[1] = tempC * extra * z + tempC * extra + tempC * z + tempB;
+    highPrecision[0] = tempA;
+    highPrecision[1] = tempC * extra * z + tempC * extra + tempC * z + tempB;
   }
 
   return result;
@@ -467,7 +466,7 @@ double sinh(double x) {
 double atan(double xa, [double xb = 0.0, bool leftPlane = false]) {
   if (xa == 0.0) {
     // Matches +/- 0.0; return correct sign
-    return leftPlane ? copySign(math.pi, xa) : xa;
+    return leftPlane ? copySign(dart_math.pi, xa) : xa;
   }
 
   bool negate;
@@ -482,7 +481,9 @@ double atan(double xa, [double xb = 0.0, bool leftPlane = false]) {
 
   if (xa > 1.633123935319537E16) {
     // Very large input
-    return (negate != leftPlane) ? (-math.pi * _f1_2) : (math.pi * _f1_2);
+    return (negate != leftPlane)
+        ? (-dart_math.pi * _f1_2)
+        : (dart_math.pi * _f1_2);
   }
 
   // Estimate the closest tabulated arctan value, compute eps = xa-tangentTable
@@ -777,15 +778,15 @@ double atan2(double y, double x) {
       if (x > 0) {
         return y; // return +/- 0.0
       } else {
-        return copySign(math.pi, y);
+        return copySign(dart_math.pi, y);
       }
     }
 
     if (x < 0 || invx < 0) {
       if (y < 0 || invy < 0) {
-        return -math.pi;
+        return -dart_math.pi;
       } else {
-        return math.pi;
+        return dart_math.pi;
       }
     } else {
       return result;
@@ -796,26 +797,26 @@ double atan2(double y, double x) {
 
   if (y == double.infinity) {
     if (x == double.infinity) {
-      return math.pi * _f1_4;
+      return dart_math.pi * _f1_4;
     }
 
     if (x == double.negativeInfinity) {
-      return math.pi * _f3_4;
+      return dart_math.pi * _f3_4;
     }
 
-    return math.pi * _f1_2;
+    return dart_math.pi * _f1_2;
   }
 
   if (y == double.negativeInfinity) {
     if (x == double.infinity) {
-      return -math.pi * _f1_4;
+      return -dart_math.pi * _f1_4;
     }
 
     if (x == double.negativeInfinity) {
-      return -math.pi * _f3_4;
+      return -dart_math.pi * _f3_4;
     }
 
-    return -math.pi * _f1_2;
+    return -dart_math.pi * _f1_2;
   }
 
   if (x == double.infinity) {
@@ -830,11 +831,11 @@ double atan2(double y, double x) {
 
   if (x == double.negativeInfinity) {
     if (y > 0.0 || 1 / y > 0.0) {
-      return math.pi;
+      return dart_math.pi;
     }
 
     if (y < 0 || 1 / y < 0) {
-      return -math.pi;
+      return -dart_math.pi;
     }
   }
 
@@ -842,11 +843,11 @@ double atan2(double y, double x) {
 
   if (x == 0) {
     if (y > 0 || 1 / y > 0) {
-      return math.pi * _f1_2;
+      return dart_math.pi * _f1_2;
     }
 
     if (y < 0 || 1 / y < 0) {
-      return -math.pi * _f1_2;
+      return -dart_math.pi * _f1_2;
     }
   }
 

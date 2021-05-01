@@ -191,11 +191,41 @@ for implementations that are just an approximation.
 [dart_math_e]: https://api.dart.dev/stable/2.12.1/dart-math/e-constant.html
 [dart_math_exp]: https://api.dart.dev/stable/2.12.1/dart-math/exp.html
 
+# Fast Math
+
+An internal fast math library is used to compute `ActivationFunctionSigmoid`.
+
+If you want you can import this library and use it in your projects:
+
+```dart
+import 'package:eneural_net/eneural_net_fast_math.dart' as fast_math ;
+
+void main() {
+  // Fast `exp` function:
+  fast_math.exp(2);
+
+  // Fast high precision `exp` function:
+  var highPrecision = <double>[0.0 , 0.0];
+  fast_math.expHighPrecision(2, 0.0, highPrecision);
+}
+```
+
+The implementation is based in the Dart package [Complex](https://pub.dev/packages/complex):
+- https://github.com/rwl/complex/blob/master/lib/src/fastmath.dart
+
 # eNeural.net
 
 You can find more at: [eneural.net][eNeural.net]
 
 [eNeural.net]: https://eneural.net/
+
+## Source
+
+The official source code is [hosted @ GitHub][github_eneural_net]:
+
+- https://github.com/eneural-net/eneural_net_dart
+
+[github_eneural_net]: https://github.com/eneural-net/eneural_net_dart
 
 # Features and bugs
 
@@ -225,14 +255,6 @@ Any help from open-source community is always welcome and needed:
 Graciliano M. Passos: [gmpassos@GitHub][github].
 
 [github]: https://github.com/gmpassos
-
-## Source
-
-The official source code is [hosted @ GitHub][github_eneural_net]:
-
-- https://github.com/eneural-net/eneural_net_dart
-
-[github_eneural_net]: https://github.com/eneural-net/eneural_net_dart
 
 ## License
 

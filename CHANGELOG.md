@@ -1,3 +1,7 @@
+## 1.0.2
+
+- Expose fast math as an additional library.
+
 ## 1.0.1
 
 - `README.md`:
