@@ -11,7 +11,7 @@
 [![Code size](https://img.shields.io/github/languages/code-size/eneural-net/eneural_net_dart?logo=github&logoColor=white)](https://github.com/eneural-net/eneural_net_dart)
 [![License](https://img.shields.io/github/license/eneural-net/eneural_net_dart?logo=open-source-initiative&logoColor=green)](https://github.com/eneural-net/eneural_net_dart/blob/master/LICENSE)
 
-[eNeural.net] is an AI Library for efficient Artificial Neural Networks.
+[eNeural.net / Dart][eNeural.net] is an AI Library for efficient Artificial Neural Networks.
 The library is portable (native, JS/Web, Flutter) and the computation
 is capable to use SIMD (Single Instruction Multiple Data) to improve performance.
 
@@ -225,6 +225,14 @@ Any help from open-source community is always welcome and needed:
 Graciliano M. Passos: [gmpassos@GitHub][github].
 
 [github]: https://github.com/gmpassos
+
+## Source
+
+The official source code is [hosted @ GitHub][github_eneural_net]:
+
+- https://github.com/eneural-net/eneural_net_dart
+
+[github_eneural_net]: https://github.com/eneural-net/eneural_net_dart
 
 ## License
 
