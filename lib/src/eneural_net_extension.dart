@@ -36,6 +36,20 @@ extension Float32x4Extension on Float32x4 {
   }
 }
 
+extension ListExtension<T> on List<T> {
+  void setAllWithValue(T n) {
+    for (var i = 0; i < length; ++i) {
+      this[i] = n;
+    }
+  }
+
+  void setAllWith(T Function(int index, T value) f) {
+    for (var i = 0; i < length; ++i) {
+      this[i] = f(i, this[i]);
+    }
+  }
+}
+
 extension ListNumExtension<N extends num> on List<N> {
   N castElement(num n) {
     if (N == int) {

@@ -171,10 +171,10 @@ void main() {
   });
 
   group('Sample', () {
-    test('SampleInt32', () {
+    test('SampleInt32x4', () {
       var scale = ScaleInt.ZERO_TO_ONE;
 
-      var samples = SampleInt32.toListFromString([
+      var samples = SampleInt32x4.toListFromString([
         '0,0=0',
         '1,0=1',
         '0,1=1',
@@ -186,28 +186,28 @@ void main() {
       expect(
           samples[0],
           equals(
-            SampleInt32.fromNormalized([0, 0], [0], scale),
+            SampleInt32x4.fromNormalized([0, 0], [0], scale),
           ));
 
-      expect(samples[0].input, equals(SignalInt32.from([0, 0])));
+      expect(samples[0].input, equals(SignalInt32x4.from([0, 0])));
       expect(samples[0].input.length, equals(2));
-      expect(samples[0].output, equals(SignalInt32.from([0])));
+      expect(samples[0].output, equals(SignalInt32x4.from([0])));
       expect(samples[0].output.length, equals(1));
 
-      expect(samples[1].input, equals(SignalInt32.from([1, 0])));
-      expect(samples[1].output, equals(SignalInt32.from([1])));
+      expect(samples[1].input, equals(SignalInt32x4.from([1, 0])));
+      expect(samples[1].output, equals(SignalInt32x4.from([1])));
 
-      expect(samples[2].input, equals(SignalInt32.from([0, 1])));
-      expect(samples[2].output, equals(SignalInt32.from([1])));
+      expect(samples[2].input, equals(SignalInt32x4.from([0, 1])));
+      expect(samples[2].output, equals(SignalInt32x4.from([1])));
 
-      expect(samples[3].input, equals(SignalInt32.from([1, 1])));
-      expect(samples[3].output, equals(SignalInt32.from([0])));
+      expect(samples[3].input, equals(SignalInt32x4.from([1, 1])));
+      expect(samples[3].output, equals(SignalInt32x4.from([0])));
     });
 
-    test('SampleFloat32', () {
+    test('SampleFloat32x4', () {
       var scale = ScaleDouble.ZERO_TO_ONE;
 
-      var samples = SampleFloat32.toListFromString([
+      var samples = SampleFloat32x4.toListFromString([
         '0,0=0',
         '1,0=1',
         '0,1=1',
@@ -219,7 +219,7 @@ void main() {
       expect(
           samples[0],
           equals(
-            SampleFloat32.fromNormalized([0, 0], [0], scale),
+            SampleFloat32x4.fromNormalized([0, 0], [0], scale),
           ));
     });
   });
@@ -267,11 +267,11 @@ void main() {
       expect(af(0), equals(yAt0));
       expect(af(1), equals(yAt0 + (yAt0 - yAt1)));
 
-      expect(af(-2) < 0.15, isTrue);
-      expect(af(2) > 0.85, isTrue);
+      expect(af(-2) < 0.20, isTrue);
+      expect(af(2) > 0.80, isTrue);
 
-      expect(af(-4) < 0.09, isTrue);
-      expect(af(4) > 0.91, isTrue);
+      expect(af(-4) < 0.10, isTrue);
+      expect(af(4) > 0.90, isTrue);
 
       expect(af(-6) < 0.07, isTrue);
       expect(af(6) > 0.93, isTrue);
@@ -281,6 +281,36 @@ void main() {
 
       expect(af(-41) <= 0.01, isTrue);
       expect(af(41) >= 0.99, isTrue);
+    });
+
+    test('ActivationFunctionSigmoidBoundedFast', () {
+      var af = ActivationFunctionSigmoidBoundedFast(6).activate;
+
+      showFunction(
+          'activationFunctionSigmoidBoundedFast',
+          (n) => af(n.toDouble()),
+          -12,
+          12,
+          1,
+          (n) => ActivationFunctionSigmoid().activate(n.toDouble()));
+
+      var yAt0 = 0.5;
+      var yAt1 = 0.33783783783783783;
+      expect(af(-1), equals(yAt1));
+      expect(af(0), equals(yAt0));
+      expect(af(1), equals(yAt0 + (yAt0 - yAt1)));
+
+      expect(af(-2) == 0.20, isTrue);
+      expect(af(2) == 0.8, isTrue);
+
+      expect(af(-4) < 0.04, isTrue);
+      expect(af(4) > 0.96, isTrue);
+
+      expect(af(-6) == 0.0, isTrue);
+      expect(af(6) == 1.0, isTrue);
+
+      expect(af(-21) == 0.0, isTrue);
+      expect(af(21) == 1.0, isTrue);
     });
 
     test('activationFunctionSigmoidFastInt', () {
@@ -313,7 +343,7 @@ void showFunction(String name, Function(num n) f, num min, num max, num step,
 
   for (var i = min;
       i <= max;
-      i += ((center - i).abs() <= step ? step / 2 : step)) {
+      i += ((center - i).abs() < step ? step / 2 : step)) {
     var o = f(i);
 
     if (f2 != null) {

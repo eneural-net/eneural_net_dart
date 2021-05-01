@@ -6,6 +6,7 @@ import 'eneural_net_sample.dart';
 import 'eneural_net_scale.dart';
 import 'eneural_net_signal.dart';
 
+/// Artificial Neural Network
 class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   final S scale;
 
@@ -38,6 +39,7 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     }
   }
 
+  /// Activate with [signal].
   void activate(T signal) {
     inputLayer.resetNextLayerNetwork();
     inputLayer.setNeurons(signal);
@@ -45,6 +47,7 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     inputLayer.activateLayer();
   }
 
+  /// Reset the weights with random values.
   void resetWeights() {
     for (var i = allLayers.length - 1; i >= 0; --i) {
       var l = allLayers[i];
@@ -52,10 +55,12 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     }
   }
 
+  /// Returns the current output of the [outputLayer] neurons.
   List<N> get output => outputLayer.getNeurons();
 
   List<N> get outputDenormalized => outputLayer.getNeuronsDenormalized(scale);
 
+  /// Computes the output errors for each sample in [samples].
   List<num> computeSamplesErrors<P extends Sample<N, E, T, S>>(
       List<P> samples) {
     return samples.map((s) {
@@ -66,6 +71,7 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     }).toList();
   }
 
+  /// Computes the global error for [samples].
   double computeSamplesGlobalError<P extends Sample<N, E, T, S>>(
           List<P> samples) =>
       computeSamplesErrors(samples).sumSquares / samples.length;
@@ -80,21 +86,26 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   }
 }
 
-class LayerInt32 extends Layer<int, Int32x4, SignalInt32, Scale<int>> {
-  LayerInt32(int size,
+/// ANN Layer for [Int32x4] types.
+///
+/// (This is experimental computation layer).
+class LayerInt32x4 extends Layer<int, Int32x4, SignalInt32x4, Scale<int>> {
+  LayerInt32x4(int size,
       [ActivationFunction<int, Int32x4> activationFunction =
           const ActivationFunctionSigmoidFastInt100()])
-      : super(SignalInt32(size), activationFunction);
+      : super(SignalInt32x4(size), activationFunction);
 }
 
-class LayerFloat32
-    extends Layer<double, Float32x4, SignalFloat32, Scale<double>> {
-  LayerFloat32(int size,
+/// [ANN] Layer for [Float32x4] types.
+class LayerFloat32x4
+    extends Layer<double, Float32x4, SignalFloat32x4, Scale<double>> {
+  LayerFloat32x4(int size,
       [ActivationFunction<double, Float32x4> activationFunction =
           const ActivationFunctionSigmoid()])
-      : super(SignalFloat32(size), activationFunction);
+      : super(SignalFloat32x4(size), activationFunction);
 }
 
+/// Base class for [ANN] layers.
 class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   final T _neurons;
   final ActivationFunction<N, E> activationFunction;
@@ -132,6 +143,8 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   }
 
   void resetWeights() {
+    if (_nextLayer == null) return;
+
     var initialWeightScale = activationFunction.initialWeightScale;
 
     for (var i = 0; i < _weights.length; ++i) {
@@ -190,6 +203,7 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   }
 }
 
+/// Layer specialized for input neurons.
 class LayerInput<N extends num, E, T extends Signal<N, E, T>,
     S extends Scale<N>> extends Layer<N, E, T, S> {
   late final Layer<N, E, T, S> _nextLayerNonNull;
@@ -221,6 +235,7 @@ class LayerInput<N extends num, E, T extends Signal<N, E, T>,
   LayerInput<N, E, T, S> get asLayerInput => this;
 }
 
+/// Layer specialized for hidden neurons.
 class LayerHidden<N extends num, E, T extends Signal<N, E, T>,
     S extends Scale<N>> extends Layer<N, E, T, S> {
   late final Layer<N, E, T, S> _nextLayerNonNull;
@@ -236,7 +251,7 @@ class LayerHidden<N extends num, E, T extends Signal<N, E, T>,
 
   @override
   void activateLayer() {
-    var activationFunction = this.activationFunction.activateX4;
+    var activationFunction = this.activationFunction.activateEntry;
 
     for (var i = _neurons.entriesLength - 1; i >= 0; --i) {
       _neurons.setEntryFilteredX4(i, activationFunction);
@@ -258,6 +273,7 @@ class LayerHidden<N extends num, E, T extends Signal<N, E, T>,
   LayerHidden<N, E, T, S> get asLayerHidden => this;
 }
 
+/// Layer specialized for output neurons.
 class LayerOutput<N extends num, E, T extends Signal<N, E, T>,
     S extends Scale<N>> extends Layer<N, E, T, S> {
   LayerOutput(T neurons, ActivationFunction<N, E> activationFunction)
@@ -265,7 +281,7 @@ class LayerOutput<N extends num, E, T extends Signal<N, E, T>,
 
   @override
   void activateLayer() {
-    var activationFunction = this.activationFunction.activateX4;
+    var activationFunction = this.activationFunction.activateEntry;
 
     for (var i = _neurons.entriesLength - 1; i >= 0; --i) {
       _neurons.setEntryFilteredX4(i, activationFunction);

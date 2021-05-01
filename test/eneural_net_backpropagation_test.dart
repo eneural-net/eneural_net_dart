@@ -3,15 +3,15 @@ import 'package:eneural_net/src/eneural_net_training.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Basic ANNs', () {
+  group('Training', () {
     setUp(() {
       print('================================================================');
     });
 
-    test('Activate Test - SampleFloat32', () {
+    test('Backpropagation', () {
       var scale = ScaleDouble.ZERO_TO_ONE;
 
-      var samples = SampleFloat32.toListFromString([
+      var samples = SampleFloat32x4.toListFromString([
         '0,0=0',
         '0,1=1',
         '1,0=1',
@@ -19,25 +19,11 @@ void main() {
       ], scale, true);
 
       var activationFunction = ActivationFunctionSigmoidBoundedFast();
-      var ann = ANN(scale, LayerFloat32(2, activationFunction), [3],
-          LayerFloat32(1, activationFunction));
+
+      var ann = ANN(scale, LayerFloat32x4(2, activationFunction), [3],
+          LayerFloat32x4(1, activationFunction));
 
       print(ann);
-
-      var chronometerActivation = Chronometer('Activation').start();
-
-      chronometerActivation.start();
-
-      for (var i = 0; i < 100000; ++i) {
-        for (var sample in samples) {
-          ann.activate(sample.input);
-          chronometerActivation.operations++;
-        }
-      }
-
-      chronometerActivation.stop();
-
-      print(chronometerActivation);
 
       print('Train...');
 
@@ -45,18 +31,16 @@ void main() {
 
       var chronometer = Chronometer('Backpropagation').start();
 
-      for (var i = 0; i < 200; ++i) {
-        var globalError = training.train(samples, 100);
-        chronometer.operations += 10;
+      var ok = training.trainUntilGlobalError(samples,
+          targetGlobalError: 0.10, maxRetries: 10);
 
-        if (i % 100 == 0) {
-          print('$i> globalError: $globalError');
-        }
-      }
-
-      chronometer.stop();
+      chronometer.stop(operations: training.totalTrainingActivations);
 
       print(ann);
+
+      expect(ok, isTrue);
+
+      expect(ann.computeSamplesGlobalError(samples) < 0.10, isTrue);
 
       for (var sample in samples) {
         ann.activate(sample.input);

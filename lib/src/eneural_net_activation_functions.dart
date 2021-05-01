@@ -7,13 +7,13 @@ abstract class ActivationFunction<N extends num, E> {
 
   const ActivationFunction(this.initialWeightScale);
 
-  N activate(N n);
+  N activate(N x);
 
-  E activateX4(E entry);
+  E activateEntry(E entry);
 
   N derivative(N o);
 
-  E derivativeX4(E entry);
+  E derivativeEntry(E entry);
 
   @override
   String toString() => runtimeType.toString();
@@ -24,12 +24,12 @@ class ActivationFunctionSigmoid extends ActivationFunction<double, Float32x4> {
       : super(initialWeightScale);
 
   @override
-  double activate(double n) {
-    return 1 / (1 + fast_math.exp(-n));
+  double activate(double x) {
+    return 1 / (1 + fast_math.exp(-x));
   }
 
   @override
-  Float32x4 activateX4(Float32x4 entry) {
+  Float32x4 activateEntry(Float32x4 entry) {
     return Float32x4(
       1 / (1 + fast_math.exp(-entry.x)),
       1 / (1 + fast_math.exp(-entry.y)),
@@ -44,7 +44,7 @@ class ActivationFunctionSigmoid extends ActivationFunction<double, Float32x4> {
   }
 
   @override
-  Float32x4 derivativeX4(Float32x4 entry) {
+  Float32x4 derivativeEntry(Float32x4 entry) {
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
@@ -60,13 +60,13 @@ class ActivationFunctionSigmoidFast
       : super(initialWeightScale);
 
   @override
-  double activate(double n) {
-    n *= 3;
-    return 0.5 + ((n) / (2.5 + n.abs()) / 2);
+  double activate(double x) {
+    x *= 3;
+    return 0.5 + ((x) / (2.5 + x.abs()) / 2);
   }
 
   @override
-  Float32x4 activateX4(Float32x4 entry) {
+  Float32x4 activateEntry(Float32x4 entry) {
     return Float32x4(
       activate(entry.x),
       activate(entry.y),
@@ -81,7 +81,7 @@ class ActivationFunctionSigmoidFast
   }
 
   @override
-  Float32x4 derivativeX4(Float32x4 entry) {
+  Float32x4 derivativeEntry(Float32x4 entry) {
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
@@ -106,18 +106,18 @@ class ActivationFunctionSigmoidBoundedFast
         super(initialWeightScale);
 
   @override
-  double activate(double n) {
-    if (n < lowerLimit) {
+  double activate(double x) {
+    if (x < lowerLimit) {
       return 0.0;
-    } else if (n > upperLimit) {
+    } else if (x > upperLimit) {
       return 1.0;
     }
-    n = n / scale;
-    return 0.5 + (n / (1 + (n * n)));
+    x = x / scale;
+    return 0.5 + (x / (1 + (x * x)));
   }
 
   @override
-  Float32x4 activateX4(Float32x4 entry) {
+  Float32x4 activateEntry(Float32x4 entry) {
     return Float32x4(
       activate(entry.x),
       activate(entry.y),
@@ -132,7 +132,7 @@ class ActivationFunctionSigmoidBoundedFast
   }
 
   @override
-  Float32x4 derivativeX4(Float32x4 entry) {
+  Float32x4 derivativeEntry(Float32x4 entry) {
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
@@ -148,12 +148,12 @@ class ActivationFunctionSigmoidFastInt100
       : super(initialWeightScale);
 
   @override
-  int activate(int n) {
-    return 50 + ((n * 100) ~/ (2 + n.abs()) ~/ 2);
+  int activate(int x) {
+    return 50 + ((x * 100) ~/ (2 + x.abs()) ~/ 2);
   }
 
   @override
-  Int32x4 activateX4(Int32x4 entry) {
+  Int32x4 activateEntry(Int32x4 entry) {
     return Int32x4(
       activate(entry.x),
       activate(entry.y),
@@ -168,7 +168,7 @@ class ActivationFunctionSigmoidFastInt100
   }
 
   @override
-  Int32x4 derivativeX4(Int32x4 entry) {
+  Int32x4 derivativeEntry(Int32x4 entry) {
     return Int32x4(
       entry.x * (100 - entry.x),
       entry.y * (100 - entry.y),
@@ -189,12 +189,12 @@ class ActivationFunctionSigmoidFastInt
         super(initialWeightScale);
 
   @override
-  int activate(int n) {
-    return scaleCenter + ((n * scaleMax) ~/ (2 + n.abs()) ~/ 2);
+  int activate(int x) {
+    return scaleCenter + ((x * scaleMax) ~/ (2 + x.abs()) ~/ 2);
   }
 
   @override
-  Int32x4 activateX4(Int32x4 entry) {
+  Int32x4 activateEntry(Int32x4 entry) {
     return Int32x4(
       activate(entry.x),
       activate(entry.y),
@@ -209,7 +209,7 @@ class ActivationFunctionSigmoidFastInt
   }
 
   @override
-  Int32x4 derivativeX4(Int32x4 entry) {
+  Int32x4 derivativeEntry(Int32x4 entry) {
     return Int32x4(
       entry.x * (100 - entry.x),
       entry.y * (100 - entry.y),

@@ -8,15 +8,15 @@ import 'package:swiss_knife/swiss_knife.dart' show formatDecimal;
 import 'eneural_net_extension.dart';
 import 'eneural_net_scale.dart';
 
-class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
-  static final SignalInt32 EMPTY = SignalInt32(0);
+class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
+  static final SignalInt32x4 EMPTY = SignalInt32x4(0);
 
   final Int32x4List _entries;
   final int _entriesLength;
 
   final int _size;
 
-  SignalInt32(int size)
+  SignalInt32x4(int size)
       : _size = size,
         _entries = Int32x4List(calcEntriesCapacity(size)),
         _entriesLength = calcEntriesCapacity(size);
@@ -24,20 +24,21 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 4);
 
-  SignalInt32._(this._entries, this._size) : _entriesLength = _entries.length;
+  SignalInt32x4._(this._entries, this._size) : _entriesLength = _entries.length;
 
-  factory SignalInt32.from(List<int> values) =>
+  factory SignalInt32x4.from(List<int> values) =>
       EMPTY.createInstanceWithValues(values);
 
-  factory SignalInt32.fromEntries(List<Int32x4> entries, int size) =>
-      SignalInt32._(Int32x4List.fromList(entries), size);
+  factory SignalInt32x4.fromEntries(List<Int32x4> entries, int size) =>
+      SignalInt32x4._(Int32x4List.fromList(entries), size);
 
   @override
   int calcEntriesCapacityForSize(int size) =>
       Signal.calcNeededBlocksChunks(size, 4, 4);
 
   @override
-  SignalInt32 copy() => SignalInt32._(Int32x4List.fromList(_entries), _size);
+  SignalInt32x4 copy() =>
+      SignalInt32x4._(Int32x4List.fromList(_entries), _size);
 
   @override
   int get zero => 0;
@@ -46,22 +47,22 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   int get one => 1;
 
   @override
-  SignalInt32 createInstance(int size) => SignalInt32(size);
+  SignalInt32x4 createInstance(int size) => SignalInt32x4(size);
 
   @override
-  SignalInt32 createRandomInstance(int size, int randomScale) {
+  SignalInt32x4 createRandomInstance(int size, int randomScale) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale);
-    return SignalInt32.fromEntries(entries, size);
+    return SignalInt32x4.fromEntries(entries, size);
   }
 
   @override
-  SignalInt32 createInstanceWithEntries(int size, List<Int32x4> entries) {
+  SignalInt32x4 createInstanceWithEntries(int size, List<Int32x4> entries) {
     while (entries.length % 4 != 0) {
       entries.add(entryEmpty);
     }
 
-    return SignalInt32._(Int32x4List.fromList(entries), size);
+    return SignalInt32x4._(Int32x4List.fromList(entries), size);
   }
 
   @override
@@ -202,7 +203,7 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  void multiplyTo(SignalInt32 other, SignalInt32 destiny) {
+  void multiplyTo(SignalInt32x4 other, SignalInt32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -222,14 +223,14 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  SignalInt32 multiply(SignalInt32 other) {
-    var destiny = SignalInt32(capacity);
+  SignalInt32x4 multiply(SignalInt32x4 other) {
+    var destiny = SignalInt32x4(capacity);
     multiplyTo(other, destiny);
     return destiny;
   }
 
   @override
-  void subtractTo(SignalInt32 other, SignalInt32 destiny) {
+  void subtractTo(SignalInt32x4 other, SignalInt32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -249,14 +250,14 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  SignalInt32 subtract(SignalInt32 other) {
-    var destiny = SignalInt32(capacity);
+  SignalInt32x4 subtract(SignalInt32x4 other) {
+    var destiny = SignalInt32x4(capacity);
     subtractTo(other, destiny);
     return destiny;
   }
 
   @override
-  void multiplyEntryTo(Int32x4 entry, SignalInt32 destiny) {
+  void multiplyEntryTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -275,7 +276,7 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  void subtractEntryTo(Int32x4 entry, SignalInt32 destiny) {
+  void subtractEntryTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -294,7 +295,7 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  void multiplyEntryAddingTo(Int32x4 entry, SignalInt32 destiny) {
+  void multiplyEntryAddingTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -313,8 +314,8 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   }
 
   @override
-  SignalInt32 multiplyEntry(Int32x4 entry) {
-    var destiny = SignalInt32(capacity);
+  SignalInt32x4 multiplyEntry(Int32x4 entry) {
+    var destiny = SignalInt32x4(capacity);
     multiplyEntryTo(entry, destiny);
     return destiny;
   }
@@ -332,7 +333,7 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SignalInt32 &&
+      other is SignalInt32x4 &&
           runtimeType == other.runtimeType &&
           _size == other._size &&
           _entriesEquality.equals(_entries, other._entries);
@@ -341,44 +342,45 @@ class SignalInt32 extends Signal<int, Int32x4, SignalInt32> {
   int get hashCode => _entries.hashCode ^ _size.hashCode;
 }
 
-class SignalFloat32Mod4 extends SignalFloat32 {
-  static final SignalFloat32Mod4 EMPTY = SignalFloat32Mod4(0);
+class SignalFloat32x4Mod4 extends SignalFloat32x4 {
+  static final SignalFloat32x4Mod4 EMPTY = SignalFloat32x4Mod4(0);
 
-  SignalFloat32Mod4(int size)
+  SignalFloat32x4Mod4(int size)
       : super._(Float32x4List(calcEntriesCapacity(size)), size);
 
-  SignalFloat32Mod4._(Float32x4List entries, int size) : super._(entries, size);
+  SignalFloat32x4Mod4._(Float32x4List entries, int size)
+      : super._(entries, size);
 
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 4);
 
-  factory SignalFloat32Mod4.from(List<double> values) =>
+  factory SignalFloat32x4Mod4.from(List<double> values) =>
       EMPTY.createInstanceWithValues(values);
 
-  factory SignalFloat32Mod4.fromEntries(List<Float32x4> entries, int size) =>
-      SignalFloat32Mod4._(Float32x4List.fromList(entries), size);
+  factory SignalFloat32x4Mod4.fromEntries(List<Float32x4> entries, int size) =>
+      SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
 
   @override
-  SignalFloat32Mod4 createInstance(int size) => SignalFloat32Mod4(size);
+  SignalFloat32x4Mod4 createInstance(int size) => SignalFloat32x4Mod4(size);
 
   @override
-  SignalFloat32Mod4 createRandomInstance(int size, int randomScale) {
+  SignalFloat32x4Mod4 createRandomInstance(int size, int randomScale) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale);
-    return SignalFloat32Mod4.fromEntries(entries, size);
+    return SignalFloat32x4Mod4.fromEntries(entries, size);
   }
 
   @override
-  SignalFloat32Mod4 createInstanceWithEntries(
+  SignalFloat32x4Mod4 createInstanceWithEntries(
       int size, List<Float32x4> entries) {
     while (entries.length % 4 != 0) {
       entries.add(entryEmpty);
     }
-    return SignalFloat32Mod4._(Float32x4List.fromList(entries), size);
+    return SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
   }
 
   @override
-  SignalFloat32Mod4 createInstanceWithValues(List<double> values) =>
+  SignalFloat32x4Mod4 createInstanceWithValues(List<double> values) =>
       createInstanceWithEntries(values.length, valuesToEntries(values));
 
   static final int ENTRY_BLOCK_SIZE = 4;
@@ -387,7 +389,7 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   int get entryBlockSize => ENTRY_BLOCK_SIZE;
 
   @override
-  void multiplyTo(SignalFloat32 other, SignalFloat32 destiny) {
+  void multiplyTo(SignalFloat32x4 other, SignalFloat32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -407,7 +409,7 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   }
 
   @override
-  void subtractTo(SignalFloat32 other, SignalFloat32 destiny) {
+  void subtractTo(SignalFloat32x4 other, SignalFloat32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -427,7 +429,7 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   }
 
   @override
-  void multiplyEntryTo(Float32x4 entry, SignalFloat32 destiny) {
+  void multiplyEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -446,7 +448,7 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   }
 
   @override
-  void subtractEntryTo(Float32x4 entry, SignalFloat32 destiny) {
+  void subtractEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -465,7 +467,7 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   }
 
   @override
-  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32 destiny) {
+  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -484,15 +486,15 @@ class SignalFloat32Mod4 extends SignalFloat32 {
   }
 }
 
-class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
-  static final SignalFloat32 EMPTY = SignalFloat32(0);
+class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
+  static final SignalFloat32x4 EMPTY = SignalFloat32x4(0);
 
   final Float32x4List _entries;
   final int _entriesLength;
 
   final int _size;
 
-  SignalFloat32(int size)
+  SignalFloat32x4(int size)
       : _size = size,
         _entries = Float32x4List(calcEntriesCapacity(size)),
         _entriesLength = calcEntriesCapacity(size);
@@ -500,13 +502,14 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 1);
 
-  SignalFloat32._(this._entries, this._size) : _entriesLength = _entries.length;
+  SignalFloat32x4._(this._entries, this._size)
+      : _entriesLength = _entries.length;
 
-  factory SignalFloat32.from(List<double> values) =>
+  factory SignalFloat32x4.from(List<double> values) =>
       EMPTY.createInstanceWithValues(values);
 
-  factory SignalFloat32.fromEntries(List<Float32x4> entries, int size) =>
-      SignalFloat32._(Float32x4List.fromList(entries), size);
+  factory SignalFloat32x4.fromEntries(List<Float32x4> entries, int size) =>
+      SignalFloat32x4._(Float32x4List.fromList(entries), size);
 
   @override
   int calcEntriesCapacityForSize(int size) =>
@@ -536,8 +539,8 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   List<Float32x4> get entries => _entries.toList();
 
   @override
-  SignalFloat32 copy() =>
-      SignalFloat32._(Float32x4List.fromList(_entries), _size);
+  SignalFloat32x4 copy() =>
+      SignalFloat32x4._(Float32x4List.fromList(_entries), _size);
 
   @override
   double get zero => 0.0;
@@ -546,21 +549,21 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   double get one => 1.0;
 
   @override
-  SignalFloat32 createInstance(int size) => SignalFloat32(size);
+  SignalFloat32x4 createInstance(int size) => SignalFloat32x4(size);
 
   @override
-  SignalFloat32 createRandomInstance(int size, int randomScale) {
+  SignalFloat32x4 createRandomInstance(int size, int randomScale) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale);
-    return SignalFloat32.fromEntries(entries, size);
+    return SignalFloat32x4.fromEntries(entries, size);
   }
 
   @override
-  SignalFloat32 createInstanceWithEntries(int size, List<Float32x4> entries) {
+  SignalFloat32x4 createInstanceWithEntries(int size, List<Float32x4> entries) {
     while (entries.length % 4 != 0) {
       entries.add(entryEmpty);
     }
-    return SignalFloat32._(Float32x4List.fromList(entries), size);
+    return SignalFloat32x4._(Float32x4List.fromList(entries), size);
   }
 
   @override
@@ -679,7 +682,7 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  void multiplyTo(SignalFloat32 other, SignalFloat32 destiny) {
+  void multiplyTo(SignalFloat32x4 other, SignalFloat32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -690,14 +693,14 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  SignalFloat32 multiply(SignalFloat32 other) {
-    var destiny = SignalFloat32(capacity);
+  SignalFloat32x4 multiply(SignalFloat32x4 other) {
+    var destiny = SignalFloat32x4(capacity);
     multiplyTo(other, destiny);
     return destiny;
   }
 
   @override
-  void subtractTo(SignalFloat32 other, SignalFloat32 destiny) {
+  void subtractTo(SignalFloat32x4 other, SignalFloat32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
 
@@ -708,14 +711,14 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  SignalFloat32 subtract(SignalFloat32 other) {
-    var destiny = SignalFloat32(capacity);
+  SignalFloat32x4 subtract(SignalFloat32x4 other) {
+    var destiny = SignalFloat32x4(capacity);
     subtractTo(other, destiny);
     return destiny;
   }
 
   @override
-  void multiplyEntryTo(Float32x4 entry, SignalFloat32 destiny) {
+  void multiplyEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -725,7 +728,7 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  void subtractEntryTo(Float32x4 entry, SignalFloat32 destiny) {
+  void subtractEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -735,7 +738,7 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32 destiny) {
+  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -745,8 +748,8 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   }
 
   @override
-  SignalFloat32 multiplyEntry(Float32x4 entry) {
-    var destiny = SignalFloat32(capacity);
+  SignalFloat32x4 multiplyEntry(Float32x4 entry) {
+    var destiny = SignalFloat32x4(capacity);
     multiplyEntryTo(entry, destiny);
     return destiny;
   }
@@ -762,7 +765,7 @@ class SignalFloat32 extends Signal<double, Float32x4, SignalFloat32> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SignalFloat32 &&
+      other is SignalFloat32x4 &&
           runtimeType == other.runtimeType &&
           _size == other._size &&
           _entriesEquality.equals(_entries, other._entries);

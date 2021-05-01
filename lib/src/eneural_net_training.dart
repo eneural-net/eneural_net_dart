@@ -1,13 +1,75 @@
 import 'package:eneural_net/eneural_net.dart';
 
+import 'eneural_net_extension.dart';
+
+/// Base class for training algorithms.
 abstract class Training<N extends num, E, T extends Signal<N, E, T>,
     S extends Scale<N>, P extends Sample<N, E, T, S>> {
   ANN<N, E, T, S> ann;
 
   Training(this.ann);
 
+  /// Learn the training of [sample]. Called by [train].
   void learn(P sample);
 
+  /// Reset this instance for a future training sessions.
+  void reset() {
+    _lastGlobalError = double.maxFinite;
+    _trainedEpochs = 0;
+    _trainingActivations = 0;
+  }
+
+  /// Train the [ann] until [targetGlobalError],
+  /// with [maxEpochs] per training session and
+  /// a [maxRetries] when a training session can't reach the target global error.
+  bool trainUntilGlobalError(List<P> samples,
+      {double targetGlobalError = 0.01,
+      int maxEpochs = 1000000,
+      int maxRetries = 5}) {
+    for (var retry = 0; retry <= maxRetries; ++retry) {
+      reset();
+      ann.resetWeights();
+
+      while (
+          _lastGlobalError > targetGlobalError && _trainedEpochs < maxEpochs) {
+        train(samples, 100);
+      }
+      if (_lastGlobalError <= targetGlobalError) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  int _totalTrainedEpochs = 0;
+
+  /// Returns the total number of epochs of all the training session.
+  /// A call to [reset] won't reset this value.
+  int get totalTrainedEpochs => _totalTrainedEpochs;
+
+  int _trainedEpochs = 0;
+
+  /// Returns the number of epochs of the last training session.
+  int get trainedEpochs => _trainedEpochs;
+
+  int _totalTrainingActivations = 0;
+
+  /// Returns the total number of activations of all the training session.
+  /// A call to [reset] won't reset this value.
+  int get totalTrainingActivations => _totalTrainingActivations;
+
+  int _trainingActivations = 0;
+
+  /// Returns the number of activations of the last training session.
+  int get trainingActivations => _trainingActivations;
+
+  double _lastGlobalError = double.maxFinite;
+
+  /// Returns the last training global error (set by [train]).
+  double get lastGlobalError => _lastGlobalError;
+
+  /// Train the [samples] for n [epochs] and returns the last
+  /// global error.
   double train(List<P> samples, int epochs) {
     var samplesLength = samples.length;
 
@@ -18,16 +80,29 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
       }
     }
 
-    return ann.computeSamplesGlobalError(samples);
+    _trainedEpochs += epochs;
+    _totalTrainedEpochs += epochs;
+
+    var activations = epochs * samplesLength;
+    _trainingActivations += activations;
+    _totalTrainingActivations += activations;
+
+    var globalError = ann.computeSamplesGlobalError(samples);
+
+    _lastGlobalError = globalError;
+
+    return globalError;
   }
 }
 
+/// Implementation of Backpropagation training algorithm.
 class Backpropagation<
     N extends num,
     E,
     T extends Signal<N, E, T>,
     S extends Scale<N>,
     P extends Sample<N, E, T, S>> extends Training<N, E, T, S, P> {
+  /// The learning rate of the Backpropagation.
   final double learningRate;
   late final E _learningRateEntry;
 
@@ -47,16 +122,19 @@ class Backpropagation<
 
     _learningRateEntry =
         _signalInstance.createEntryFullOf(_signalInstance.toN(learningRate));
+  }
 
-    /*
-    _layersDelta = ann.allLayers
-        .map((l) => List<num>.generate(l.length, (i) => 0.0))
-        .toList();
+  @override
+  void reset() {
+    super.reset();
 
-    _layersPreviousDelta = ann.allLayers
-        .map((l) => List<num>.generate(l.length, (i) => 0.0))
-        .toList();
-     */
+    var fResetDelta = (i, v) {
+      var l = ann.allLayers[i];
+      return ann.allLayers[i].neurons.createInstance(l.length);
+    };
+
+    _layersDelta.setAllWith(fResetDelta);
+    _layersPreviousDelta.setAllWith(fResetDelta);
   }
 
   @override
@@ -121,24 +199,6 @@ class Backpropagation<
 
       deltas.setValue(neuronI, deltas.toN(delta));
     }
-
-    /*
-    for (var neuronI = 0; neuronI < length; ++neuronI) {
-      var neuronWeights = weights[neuronI];
-      var neuronError = 0.0;
-
-      for (var nextNeuronI = 0; nextNeuronI < nextLength; ++nextNeuronI) {
-        var weight = neuronWeights.getValue(nextNeuronI);
-        var nextNeuronDelta = nextDeltas[nextNeuronI];
-        neuronError += weight * nextNeuronDelta;
-      }
-
-      var neuronOutput = neurons.getValue(neuronI);
-
-      deltas[neuronI] =
-          neuronError * activationFunction.derivative(neuronOutput);
-    }
-     */
   }
 
   void _backPropagateLastLayerError(
@@ -153,25 +213,11 @@ class Backpropagation<
       var expectedEntry = expected.getEntry(i);
       var error = expected.entryOperationSubtract(expectedEntry, neuronsEntry);
 
-      var derivative = activationFunction.derivativeX4(neuronsEntry);
+      var derivative = activationFunction.derivativeEntry(neuronsEntry);
       var delta = expected.entryOperationMultiply(error, derivative);
 
       deltas.setEntry(i, delta);
     }
-
-    /*
-    var activationFunction = layer.activationFunction;
-
-    var neurons = layer.neurons;
-    var deltas = _layersDelta[layerIndex]; // layer.deltas;
-    var length = neurons.length;
-
-    for (var neuronI = 0; neuronI < length; ++neuronI) {
-      var neuronOutput = neurons.getValue(neuronI);
-      var error = expected[neuronI] - neuronOutput;
-      deltas[neuronI] = error * activationFunction.derivative(neuronOutput);
-    }
-     */
   }
 
   void _updateLayerWeights(Layer<N, E, T, S> layer, int layerIndex) {
@@ -199,7 +245,7 @@ class Backpropagation<
         var nextDeltasEntry = nextDeltas.getEntry(i);
         var nextDeltaPreviousEntry = nextLayerPreviousDeltas.getEntry(i);
 
-        var wUpdate = computeWeightUpdateX4(weightsEntry, nextDeltasEntry,
+        var wUpdate = computeEntryWeightUpdate(weightsEntry, nextDeltasEntry,
             nextDeltaPreviousEntry, neuronOutputEntry);
 
         var weight2 = neuronWeights.entryOperationSum(weightsEntry, wUpdate);
@@ -208,35 +254,18 @@ class Backpropagation<
 
         nextLayerPreviousDeltas.setEntry(i, nextDeltasEntry);
       }
-
-      //
-
-      /*
-      for (var nextNeuronI = 0; nextNeuronI < nextLength; ++nextNeuronI) {
-        var weight = neuronWeights.getValue(nextNeuronI);
-        var nextDelta = nextDeltas[nextNeuronI];
-        var nextDeltaPrevious = nextLayerPreviousDeltas[nextNeuronI];
-
-        var wUpdate = computeWeightUpdate(
-            weight, nextDelta, nextDeltaPrevious, neuronOutput);
-
-        var weight2 = weight + wUpdate;
-
-        neuronWeights.setValue(nextNeuronI, neuronWeights.toN(weight2));
-
-        nextLayerPreviousDeltas[nextNeuronI] = nextDelta;
-      }
-       */
     }
   }
 
+  /// Implementation of the weight update.
   double computeWeightUpdate(N weight, num nextLayerDelta,
       num nextLayerPreviousDelta, N neuronOutput) {
     var wUpdate = learningRate * nextLayerDelta * neuronOutput;
     return wUpdate;
   }
 
-  E computeWeightUpdateX4(
+  /// Implementation of the weight update for an entry.
+  E computeEntryWeightUpdate(
       E weight, E nextLayerDelta, E nextLayerPreviousDelta, E neuronOutput) {
     var deltaOutput =
         _signalInstance.entryOperationMultiply(nextLayerDelta, neuronOutput);

@@ -1,54 +1,46 @@
-import 'dart:typed_data';
-
 import 'package:eneural_net/eneural_net.dart';
-
-import 'package:eneural_net/src/eneural_net_extension.dart';
+import 'package:eneural_net/eneural_net_extensions.dart';
 
 void main() {
-  runAnnFloat32x4(4000000, ActivationFunctionSigmoid());
-  runAnnFloat32x4(4000000, ActivationFunctionSigmoid());
-  runAnnFloat32x4(4000000, ActivationFunctionSigmoid());
-
-  print('------------------\n');
-
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidFast());
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidFast());
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidFast());
-
-  print('------------------\n');
-
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidBoundedFast());
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidBoundedFast());
-  runAnnFloat32x4(6000000, ActivationFunctionSigmoidBoundedFast());
-}
-
-Chronometer runAnnFloat32x4(
-    int limit, ActivationFunction<double, Float32x4> activationFunction) {
+  // Type of scale to use to compute the ANN:
   var scale = ScaleDouble.ZERO_TO_ONE;
 
-  var samples = SampleFloat32.toListFromString([
-    '0,0=0',
-    '1,0=1',
-    '0,1=1',
-    '1,1=0',
-  ], scale, true);
+  // The samples to learn
+  var samples = SampleFloat32x4.toListFromString(
+    [
+      '0,0=0',
+      '1,0=1',
+      '0,1=1',
+      '1,1=0',
+    ],
+    scale,
+    true, // Already normalized in the scale.
+  );
 
-  var ann = ANN(scale, LayerFloat32(2, activationFunction), [3],
-      LayerFloat32(1, activationFunction));
+  // The activation function to use in the ANN:
+  var activationFunction = ActivationFunctionSigmoid();
+
+  // The ANN using layers that can compute with Float32x4 (SIMD compatible type).
+  var ann = ANN(scale, LayerFloat32x4(2, activationFunction), [3],
+      LayerFloat32x4(1, activationFunction));
 
   print(ann);
 
+  // Training algorithm:
   var backpropagation = Backpropagation(ann);
 
   var chronometer = Chronometer('Backpropagation').start();
 
-  while (chronometer.operations < limit) {
-    backpropagation.train(samples, 100);
-    chronometer.operations += samples.length * 100;
-  }
+  // Train the ANN using Backpropagation until global error 0.01,
+  // with max epochs per training session of 1000000 and
+  // a max retry of 10 when a training session can't reach
+  // the target global error:
+  var achievedTargetError = backpropagation.trainUntilGlobalError(samples,
+      targetGlobalError: 0.01, maxEpochs: 1000000, maxRetries: 10);
 
-  chronometer.stop();
+  chronometer.stop(operations: backpropagation.totalTrainingActivations);
 
+  // Compute the current global error of the ANN:
   var globalError = ann.computeSamplesGlobalError(samples);
 
   for (var i = 0; i < samples.length; ++i) {
@@ -56,16 +48,18 @@ Chronometer runAnnFloat32x4(
 
     var input = sample.input;
     var expected = sample.output;
+
+    // Activate the sample input:
     ann.activate(input);
+
+    // The current output of the ANN (after activation):
     var output = ann.output;
 
-    print('$i> $input -> $output ($expected) > error: ${output - expected}');
+    print('- $i> $input -> $output ($expected) > error: ${output - expected}');
   }
 
   print('globalError: $globalError');
+  print('achievedTargetError: $achievedTargetError');
 
   print(chronometer);
-  print('');
-
-  return chronometer;
 }
