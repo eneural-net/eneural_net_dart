@@ -5,7 +5,7 @@ void main() {
   // Type of scale to use to compute the ANN:
   var scale = ScaleDouble.ZERO_TO_ONE;
 
-  // The samples to learn
+  // The samples to learn in Float32x4 data type:
   var samples = SampleFloat32x4.toListFromString(
     [
       '0,0=0',
@@ -21,8 +21,12 @@ void main() {
   var activationFunction = ActivationFunctionSigmoid();
 
   // The ANN using layers that can compute with Float32x4 (SIMD compatible type).
-  var ann = ANN(scale, LayerFloat32x4(2, activationFunction), [3],
-      LayerFloat32x4(1, activationFunction));
+  var ann = ANN(
+    scale,
+    LayerFloat32x4(2, activationFunction), // Input layer: 2 neurons
+    [3],                                   // 1 Hidden layer: 3 neurons
+    LayerFloat32x4(1, activationFunction), // Output layer: 1 neuron
+  );
 
   print(ann);
 

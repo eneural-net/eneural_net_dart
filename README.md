@@ -1,4 +1,4 @@
-## eneural_net
+# eneural_net
 
 [![pub package](https://img.shields.io/pub/v/eneural_net.svg?logo=dart&logoColor=00b9fc)](https://pub.dev/packages/eneural_net)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
@@ -15,7 +15,7 @@
 The library is portable (native, JS/Web, Flutter) and the computation
 is capable to use SIMD (Single Instruction Multiple Data) to improve performance.
 
-### Usage
+## Usage
 
 ```dart
 import 'package:eneural_net/eneural_net.dart';
@@ -25,7 +25,7 @@ void main() {
   // Type of scale to use to compute the ANN:
   var scale = ScaleDouble.ZERO_TO_ONE;
 
-  // The samples to learn
+  // The samples to learn in Float32x4 data type:
   var samples = SampleFloat32x4.toListFromString(
     [
       '0,0=0',
@@ -41,8 +41,12 @@ void main() {
   var activationFunction = ActivationFunctionSigmoid();
 
   // The ANN using layers that can compute with Float32x4 (SIMD compatible type).
-  var ann = ANN(scale, LayerFloat32x4(2, activationFunction), [3],
-          LayerFloat32x4(1, activationFunction));
+  var ann = ANN(
+    scale,
+    LayerFloat32x4(2, activationFunction), // Input layer: 2 neurons
+    [3],                                   // 1 Hidden layer: 3 neurons
+    LayerFloat32x4(1, activationFunction), // Output layer: 1 neuron
+  );
 
   print(ann);
 
@@ -58,7 +62,7 @@ void main() {
   var achievedTargetError = backpropagation.trainUntilGlobalError(samples,
           targetGlobalError: 0.01, maxEpochs: 1000000, maxRetries: 10);
 
-  chronometer.stop(operations: backpropagation.totalTrainedActivations);
+  chronometer.stop(operations: backpropagation.totalTrainingActivations);
 
   // Compute the current global error of the ANN:
   var globalError = ann.computeSamplesGlobalError(samples);
@@ -84,7 +88,7 @@ void main() {
   print(chronometer);
 }
 ```
-## SIMD (Single Instruction Multiple Data)
+# SIMD (Single Instruction Multiple Data)
 
 Dart has support for SIMD when computation is made using [Float32x4] and [Int32x4].
 
@@ -94,8 +98,8 @@ The basic principle with SIMD is to execute math operations simultaneously in 4 
 Example of multiplication:
 
 ```dart
-  var fs1 = Float32x4(1.1,2.2,3.3,4.4);
-  var fs2 = Float32x4(10,100,1000,1000);
+  var fs1 = Float32x4( 1.1 , 2.2 , 3.3  , 4.4  );
+  var fs2 = Float32x4( 10  , 100 , 1000 , 1000 );
   
   var fs3 = fs1 * fs2 ;
   
@@ -112,7 +116,7 @@ See "[dart:typed_data library][dart_typed_data]" and "[Using SIMD in Dart][using
 [dart_typed_data]: https://api.dart.dev/stable/2.12.4/dart-typed_data/dart-typed_data-library.html
 [using_simd]: https://www.dartcn.com/articles/server/simd
 
-## Signal
+# Signal
 
 The class `Signal` represents the collection of numbers (including its related operations)
 that will flow through the `ANN`, representing the actual signal that
@@ -125,7 +129,7 @@ The framework of `Signal` allows the implementation of any kind of data
 to represent the numbers and operations of an [eNeural.net] `ANN`. `SignalInt32x4`
 is an experimental implementation to exercise an `ANN` based in integers.
 
-## Activation Functions
+# Activation Functions
 
 `ActivationFunction` is the base class for `ANN` neurons activation functions:
 
@@ -168,17 +172,17 @@ for implementations that are just an approximation.
 [dart_math_e]: https://api.dart.dev/stable/2.12.1/dart-math/e-constant.html
 [dart_math_exp]: https://api.dart.dev/stable/2.12.1/dart-math/exp.html
 
-## eNeural.net
+# eNeural.net
 
 You can find more at address [eneural.net][eNeural.net]
 
 [eNeural.net]: https://eneural.net/
 
-## Features and bugs
+# Features and bugs
 
 Please file feature requests and bugs at the [issue tracker][tracker].
 
-## Contribution
+# Contribution
 
 Any help from open-source community is always welcome and needed:
 - Found an issue?
@@ -197,7 +201,7 @@ Any help from open-source community is always welcome and needed:
 
 [tracker]: https://github.com/eneural-net/eneural_net_dart/issues
 
-## Author
+# Author
 
 Graciliano M. Passos: [gmpassos@GitHub][github].
 
