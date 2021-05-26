@@ -8,3 +8,5 @@ export 'src/eneural_net_scale.dart';
 export 'src/eneural_net_signal.dart';
 export 'src/eneural_net_tools.dart';
 export 'src/eneural_net_training.dart';
+export 'src/eneural_net_training_backpropagation.dart';
+export 'src/eneural_net_training_rprop.dart';
