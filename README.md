@@ -37,21 +37,30 @@ void main() {
     true, // Already normalized in the scale.
   );
 
+  var samplesSet = SamplesSet(samples, subject: 'xor');
+
   // The activation function to use in the ANN:
   var activationFunction = ActivationFunctionSigmoid();
 
   // The ANN using layers that can compute with Float32x4 (SIMD compatible type).
   var ann = ANN(
     scale,
-    LayerFloat32x4(2, activationFunction), // Input layer: 2 neurons
-    [3],                                   // 1 Hidden layer: 3 neurons
-    LayerFloat32x4(1, activationFunction), // Output layer: 1 neuron
+    // Input layer: 2 neurons with linear activation function:
+    LayerFloat32x4(2, true, ActivationFunctionLinear()),
+    // 1 Hidden layer: 3 neurons with sigmoid activation function:
+    [HiddenLayerConfig(3, true, activationFunction)],
+    // Output layer: 1 neuron with sigmoid activation function:
+    LayerFloat32x4(1, false, activationFunction),
   );
 
   print(ann);
 
   // Training algorithm:
-  var backpropagation = Backpropagation(ann);
+  var backpropagation = Backpropagation(ann, samplesSet);
+
+  print(backpropagation);
+
+  print('\n---------------------------------------------------');
 
   var chronometer = Chronometer('Backpropagation').start();
 
@@ -59,14 +68,17 @@ void main() {
   // with max epochs per training session of 1000000 and
   // a max retry of 10 when a training session can't reach
   // the target global error:
-  var achievedTargetError = backpropagation.trainUntilGlobalError(samples,
-          targetGlobalError: 0.01, maxEpochs: 1000000, maxRetries: 10);
+  var achievedTargetError = backpropagation.trainUntilGlobalError(
+          targetGlobalError: 0.01, maxEpochs: 50000, maxRetries: 10);
 
   chronometer.stop(operations: backpropagation.totalTrainingActivations);
+
+  print('---------------------------------------------------\n');
 
   // Compute the current global error of the ANN:
   var globalError = ann.computeSamplesGlobalError(samples);
 
+  print('Samples Outputs:');
   for (var i = 0; i < samples.length; ++i) {
     var sample = samples[i];
 
@@ -82,12 +94,37 @@ void main() {
     print('- $i> $input -> $output ($expected) > error: ${output - expected}');
   }
 
-  print('globalError: $globalError');
-  print('achievedTargetError: $achievedTargetError');
+  print('\nglobalError: $globalError');
+  print('achievedTargetError: $achievedTargetError\n');
 
   print(chronometer);
 }
 ```
+
+Output:
+
+```text
+ANN<double, Float32x4, SignalFloat32x4, Scale<double>>{ layers: 2+ -> [3+] -> 1 ; ScaleDouble{0.0 .. 1.0}  ; ActivationFunctionSigmoid }
+Backpropagation<double, Float32x4, SignalFloat32x4, Scale<double>, SampleFloat32x4>{name: Backpropagation}
+
+---------------------------------------------------
+Backpropagation> [INFO] Started Backpropagation training session "xor". { samples: 4 ; targetGlobalError: 0.01 }
+Backpropagation> [INFO] Selected initial ANN from poll of size 100, executing 600 epochs. Lowest error: 0.2451509315860858 (0.2479563313068569)
+Backpropagation> [INFO] (OK) Reached target error in 2317 epochs (107 ms). Final error: 0.009992250436771877 <= 0.01
+---------------------------------------------------
+
+Samples Outputs:
+- 0> [0, 0] -> [0.11514352262020111] ([0]) > error: [0.11514352262020111]
+- 1> [1, 0] -> [0.9083549976348877] ([1]) > error: [-0.0916450023651123]
+- 2> [0, 1] -> [0.9032943248748779] ([1]) > error: [-0.09670567512512207]
+- 3> [1, 1] -> [0.09465821087360382] ([0]) > error: [0.09465821087360382]
+
+globalError: 0.009992250436771877
+achievedTargetError: true
+
+Backpropagation{elapsedTime: 111 ms, hertz: 83495.49549549549 Hz, ops: 9268, startTime: 2021-05-26 06:25:34.825383, stopTime: 2021-05-26 06:25:34.936802}
+```
+
 # SIMD (Single Instruction Multiple Data)
 
 Dart has support for SIMD when computation is made using [Float32x4] and [Int32x4].
@@ -233,17 +270,17 @@ Please file feature requests and bugs at the [issue tracker][tracker].
 
 # Contribution
 
-Any help from open-source community is always welcome and needed:
+Any help from the open-source community is always welcome and needed:
 - Found an issue?
-    - Fill a bug with details.
+    - Please fill a bug report with details.
 - Wish a feature?
-    - Open a feature request.
+    - Open a feature request with use cases.
 - Are you using and liking the project?
-    - Promote the project: create an article, post or make a donation.
+    - Promote the project: create an article, do a post or make a donation.
 - Are you a developer?
     - Fix a bug and send a pull request.
     - Implement a new feature, like other training algorithms and activation functions.
-    - Improve unit tests.
+    - Improve the Unit Tests.
 - Have you already helped in any way?
     - **Many thanks from me, the contributors and everybody that uses this project!**
 
