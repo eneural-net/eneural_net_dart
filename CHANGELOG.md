@@ -10,6 +10,12 @@
   - Added SIMD related operations.
   - Added: `computeSumSquaresMean`, `computeSumSquares`, `valuesAsDouble`.
   - Set extra values (out of length range): `setExtraValuesToZero`, `setExtraValuesToOne`, `setExtraValues`.
+  - Improved documentation.
+- `Sample`:
+  - Input/Output statistics and proximity.
+- Added `SamplesSet`:
+  - With per set computed `defaultTargetGlobalError`.
+  - Automatic `removeConflicts`.
 
 ## 1.0.2
 
