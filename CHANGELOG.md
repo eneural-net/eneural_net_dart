@@ -6,6 +6,10 @@
   - `ActivationFunctionSigmoid`: activation with bounds (-700 .. 700).
 - Improved collections and numeric extensions.
 - Improved `DataStatistics` and add `CSV` generator.
+- `Signal`:
+  - Added SIMD related operations.
+  - Added: `computeSumSquaresMean`, `computeSumSquares`, `valuesAsDouble`.
+  - Set extra values (out of length range): `setExtraValuesToZero`, `setExtraValuesToOne`, `setExtraValues`.
 
 ## 1.0.2
 

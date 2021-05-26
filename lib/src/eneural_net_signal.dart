@@ -19,12 +19,17 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   SignalInt32x4(int size)
       : _size = size,
         _entries = Int32x4List(calcEntriesCapacity(size)),
-        _entriesLength = calcEntriesCapacity(size);
+        _entriesLength = calcEntriesCapacity(size) {
+    assert(_entries.length == _entriesLength);
+  }
 
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 4);
 
-  SignalInt32x4._(this._entries, this._size) : _entriesLength = _entries.length;
+  SignalInt32x4._(this._entries, this._size)
+      : _entriesLength = _entries.length {
+    assert(_entries.length == _entriesLength);
+  }
 
   factory SignalInt32x4.from(List<int> values) =>
       EMPTY.createInstanceWithValues(values);
@@ -50,20 +55,21 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   SignalInt32x4 createInstance(int size) => SignalInt32x4(size);
 
   @override
-  SignalInt32x4 createRandomInstance(int size, int randomScale) {
+  SignalInt32x4 createRandomInstance(int size, int randomScale,
+      [Random? rand]) {
     var capacity = calcEntriesCapacityForSize(size);
-    var entries = createRandomEntries(capacity, randomScale);
+    var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalInt32x4.fromEntries(entries, size);
   }
 
   @override
   SignalInt32x4 createInstanceWithEntries(int size, List<Int32x4> entries) {
-    while (entries.length % 4 != 0) {
-      entries.add(entryEmpty);
-    }
-
+    ensureEntriesLengthMod(entries);
     return SignalInt32x4._(Int32x4List.fromList(entries), size);
   }
+
+  @override
+  void ensureEntriesLengthMod(List<Int32x4> entries) {}
 
   @override
   int toN(num n) => n.toInt();
@@ -80,7 +86,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   int get length => _size;
 
   @override
-  int get capacity => _entries.length * 4;
+  int get capacity => _entriesLength * 4;
 
   @override
   int get entriesLength => _entriesLength;
@@ -93,6 +99,16 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   void setEntry(int index, Int32x4 entry) => _entries[index] = entry;
+
+  @override
+  void addToEntry(int index, Int32x4 entry) {
+    _entries[index] += entry;
+  }
+
+  @override
+  void subtractToEntry(int index, Int32x4 entry) {
+    _entries[index] -= entry;
+  }
 
   @override
   Int32x4 getEntryFilteredX4(
@@ -144,6 +160,22 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
+  Int32x4 addValueFromEntry(Int32x4 entry, int offset, int value) {
+    switch (offset) {
+      case 0:
+        return entry.withX(entry.x + value);
+      case 1:
+        return entry.withY(entry.y + value);
+      case 2:
+        return entry.withZ(entry.z + value);
+      case 3:
+        return entry.withW(entry.w + value);
+      default:
+        throw StateError('Invalid Float32x4 entry offset: $offset/4');
+    }
+  }
+
+  @override
   Int32x4 createEntry1(int v0) => Int32x4(v0, 0, 0, 0);
 
   @override
@@ -157,6 +189,11 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
       Int32x4(v0, v1, v2, v3);
 
   @override
+  Int32x4 createEntryFrom(Int32x4 other, [int? v0, int? v1, int? v2, int? v3]) {
+    return Int32x4(v0 ?? other.x, v1 ?? other.y, v2 ?? other.z, v3 ?? other.w);
+  }
+
+  @override
   Int32x4 createEntryFullOf(int v) => Int32x4(v, v, v, v);
 
   static final Int32x4 _entryEmpty = Int32x4(0, 0, 0, 0);
@@ -167,14 +204,18 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   static final Random _random = Random();
 
   @override
-  int createRandomValue(int scale) {
-    return _random.nextInt(scale * 2) - scale;
+  int createRandomValue(int scale, [Random? rand]) {
+    rand ??= _random;
+    return rand.nextInt(scale * 2) - scale;
   }
 
   @override
-  Int32x4 createRandomEntry(int scale) {
-    return Int32x4(createRandomValue(scale), createRandomValue(scale),
-        createRandomValue(scale), createRandomValue(scale));
+  Int32x4 createRandomEntry(int scale, [Random? rand]) {
+    return Int32x4(
+        createRandomValue(scale, rand),
+        createRandomValue(scale, rand),
+        createRandomValue(scale, rand),
+        createRandomValue(scale, rand));
   }
 
   @override
@@ -200,6 +241,21 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   @override
   int entryOperationSumLane(Int32x4 entry) {
     return entry.sumLane;
+  }
+
+  @override
+  int entryOperationSumLanePartial(Int32x4 entry, int size) {
+    return entry.sumLanePartial(size);
+  }
+
+  @override
+  int entryOperationSumSquaresLane(Int32x4 entry) {
+    return entry.sumSquaresLane;
+  }
+
+  @override
+  int entryOperationSumSquaresLanePartial(Int32x4 entry, int size) {
+    return entry.sumSquaresLanePartial(size);
   }
 
   @override
@@ -257,7 +313,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
-  void multiplyEntryTo(Int32x4 entry, SignalInt32x4 destiny) {
+  void multiplyEntriesTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -276,7 +332,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
-  void subtractEntryTo(Int32x4 entry, SignalInt32x4 destiny) {
+  void subtractEntriesTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -295,7 +351,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
-  void multiplyEntryAddingTo(Int32x4 entry, SignalInt32x4 destiny) {
+  void multiplyEntriesAddingTo(Int32x4 entry, SignalInt32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -314,9 +370,9 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
-  SignalInt32x4 multiplyEntry(Int32x4 entry) {
+  SignalInt32x4 multiplyEntries(Int32x4 entry) {
     var destiny = SignalInt32x4(capacity);
-    multiplyEntryTo(entry, destiny);
+    multiplyEntriesTo(entry, destiny);
     return destiny;
   }
 
@@ -364,19 +420,25 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   SignalFloat32x4Mod4 createInstance(int size) => SignalFloat32x4Mod4(size);
 
   @override
-  SignalFloat32x4Mod4 createRandomInstance(int size, int randomScale) {
+  SignalFloat32x4Mod4 createRandomInstance(int size, double randomScale,
+      [Random? rand]) {
     var capacity = calcEntriesCapacityForSize(size);
-    var entries = createRandomEntries(capacity, randomScale);
+    var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalFloat32x4Mod4.fromEntries(entries, size);
   }
 
   @override
   SignalFloat32x4Mod4 createInstanceWithEntries(
       int size, List<Float32x4> entries) {
+    ensureEntriesLengthMod(entries);
+    return SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
+  }
+
+  @override
+  void ensureEntriesLengthMod(List<Float32x4> entries) {
     while (entries.length % 4 != 0) {
       entries.add(entryEmpty);
     }
-    return SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
   }
 
   @override
@@ -429,7 +491,7 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   }
 
   @override
-  void multiplyEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void multiplyEntriesTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -448,7 +510,7 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   }
 
   @override
-  void subtractEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void subtractEntriesTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -467,7 +529,7 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   }
 
   @override
-  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void multiplyEntriesAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -497,13 +559,17 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   SignalFloat32x4(int size)
       : _size = size,
         _entries = Float32x4List(calcEntriesCapacity(size)),
-        _entriesLength = calcEntriesCapacity(size);
+        _entriesLength = calcEntriesCapacity(size) {
+    assert(_entries.length == _entriesLength);
+  }
 
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 1);
 
   SignalFloat32x4._(this._entries, this._size)
-      : _entriesLength = _entries.length;
+      : _entriesLength = _entries.length {
+    assert(_entries.length == _entriesLength);
+  }
 
   factory SignalFloat32x4.from(List<double> values) =>
       EMPTY.createInstanceWithValues(values);
@@ -530,7 +596,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   int get length => _size;
 
   @override
-  int get capacity => _entries.length * 4;
+  int get capacity => _entriesLength * 4;
 
   @override
   int get entriesLength => _entriesLength;
@@ -552,25 +618,37 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   SignalFloat32x4 createInstance(int size) => SignalFloat32x4(size);
 
   @override
-  SignalFloat32x4 createRandomInstance(int size, int randomScale) {
+  SignalFloat32x4 createRandomInstance(int size, double randomScale,
+      [Random? rand]) {
     var capacity = calcEntriesCapacityForSize(size);
-    var entries = createRandomEntries(capacity, randomScale);
+    var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalFloat32x4.fromEntries(entries, size);
   }
 
   @override
   SignalFloat32x4 createInstanceWithEntries(int size, List<Float32x4> entries) {
-    while (entries.length % 4 != 0) {
-      entries.add(entryEmpty);
-    }
+    ensureEntriesLengthMod(entries);
     return SignalFloat32x4._(Float32x4List.fromList(entries), size);
   }
+
+  @override
+  void ensureEntriesLengthMod(List<Float32x4> entries) {}
 
   @override
   Float32x4 getEntry(int index) => _entries[index];
 
   @override
   void setEntry(int index, Float32x4 entry) => _entries[index] = entry;
+
+  @override
+  void addToEntry(int index, Float32x4 entry) {
+    _entries[index] += entry;
+  }
+
+  @override
+  void subtractToEntry(int index, Float32x4 entry) {
+    _entries[index] -= entry;
+  }
 
   @override
   Float32x4 getEntryFilteredX4(
@@ -622,6 +700,22 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
+  Float32x4 addValueFromEntry(Float32x4 entry, int offset, double value) {
+    switch (offset) {
+      case 0:
+        return entry.withX(entry.x + value);
+      case 1:
+        return entry.withY(entry.y + value);
+      case 2:
+        return entry.withZ(entry.z + value);
+      case 3:
+        return entry.withW(entry.w + value);
+      default:
+        throw StateError('Invalid Float32x4 entry offset: $offset/4');
+    }
+  }
+
+  @override
   Float32x4 createEntry1(double v0) => Float32x4(v0, 0, 0, 0);
 
   @override
@@ -636,6 +730,13 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
       Float32x4(v0, v1, v2, v3);
 
   @override
+  Float32x4 createEntryFrom(Float32x4 other,
+      [double? v0, double? v1, double? v2, double? v3]) {
+    return Float32x4(
+        v0 ?? other.x, v1 ?? other.y, v2 ?? other.z, v3 ?? other.w);
+  }
+
+  @override
   Float32x4 createEntryFullOf(double v) => Float32x4.splat(v);
 
   static final Float32x4 _entryEmpty = Float32x4(0, 0, 0, 0);
@@ -646,14 +747,24 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   static final Random _random = Random();
 
   @override
-  double createRandomValue(int scale) {
-    return (_random.nextDouble() * (scale * 2)) - scale;
+  double createRandomValue(double scale, [Random? rand]) {
+    rand ??= _random;
+    return (rand.nextDouble() * (scale * 2)) - scale;
+  }
+
+  double _createRandomValue(double scale, Random rand) {
+    return (rand.nextDouble() * (scale * 2)) - scale;
   }
 
   @override
-  Float32x4 createRandomEntry(int scale) {
-    return Float32x4(createRandomValue(scale), createRandomValue(scale),
-        createRandomValue(scale), createRandomValue(scale));
+  Float32x4 createRandomEntry(double scale, [Random? rand]) {
+    rand ??= _random;
+
+    return Float32x4(
+        _createRandomValue(scale, rand),
+        _createRandomValue(scale, rand),
+        _createRandomValue(scale, rand),
+        _createRandomValue(scale, rand));
   }
 
   @override
@@ -679,6 +790,21 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   @override
   double entryOperationSumLane(Float32x4 entry) {
     return entry.sumLane;
+  }
+
+  @override
+  double entryOperationSumLanePartial(Float32x4 entry, int size) {
+    return entry.sumLanePartial(size);
+  }
+
+  @override
+  double entryOperationSumSquaresLane(Float32x4 entry) {
+    return entry.sumSquaresLane;
+  }
+
+  @override
+  double entryOperationSumSquaresLanePartial(Float32x4 entry, int size) {
+    return entry.sumSquaresLanePartial(size);
   }
 
   @override
@@ -718,7 +844,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
-  void multiplyEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void multiplyEntriesTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -728,7 +854,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
-  void subtractEntryTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void subtractEntriesTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -738,7 +864,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
-  void multiplyEntryAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
+  void multiplyEntriesAddingTo(Float32x4 entry, SignalFloat32x4 destiny) {
     var entriesDst = destiny._entries;
 
     for (var i = _entriesLength; i > 0;) {
@@ -748,9 +874,9 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
-  SignalFloat32x4 multiplyEntry(Float32x4 entry) {
+  SignalFloat32x4 multiplyEntries(Float32x4 entry) {
     var destiny = SignalFloat32x4(capacity);
-    multiplyEntryTo(entry, destiny);
+    multiplyEntriesTo(entry, destiny);
     return destiny;
   }
 
@@ -821,9 +947,18 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   List<E> get entries;
 
+  int get lastEntryLength {
+    var length = this.length;
+    return length == 0 ? 0 : length - (capacity - entryBlockSize);
+  }
+
   E getEntry(int index);
 
   void setEntry(int index, E entry);
+
+  void addToEntry(int index, E entry);
+
+  void subtractToEntry(int index, E entry);
 
   E getEntryFilteredX4(int index, E Function(E entry) filter);
 
@@ -847,8 +982,8 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     return entry;
   }
 
-  E setEntryWithRandomValues(int index, int scale) {
-    var entry = createRandomEntry(scale);
+  E setEntryWithRandomValues(int index, N scale, [Random? rand]) {
+    var entry = createRandomEntry(scale, rand);
     setEntry(index, entry);
     return entry;
   }
@@ -857,16 +992,49 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     setEntry(index, entryEmpty);
   }
 
+  void setAllEntriesEmpty() {
+    for (var i = entriesLength - 1; i >= 0; --i) {
+      setEntry(i, entryEmpty);
+    }
+  }
+
+  void setAllEntriesWithValue(N value) {
+    var entry = createEntryFullOf(value);
+    for (var i = entriesLength - 1; i >= 0; --i) {
+      setEntry(i, entry);
+    }
+  }
+
+  void setAllEntriesWith(T other) {
+    for (var i = entriesLength - 1; i >= 0; --i) {
+      var entry = other.getEntry(i);
+      setEntry(i, entry);
+    }
+  }
+
   T copy();
+
+  T createInstanceOfSameLength() => createInstance(length);
+
+  T createInstanceOfSameLengthFullOfValue(N value) =>
+      createInstanceFullOfValue(length, value);
 
   T createInstance(int size);
 
-  T createRandomInstance(int size, int randomScale);
+  T createRandomInstance(int size, N randomScale, [Random? rand]);
 
   T createInstanceWithEntries(int size, List<E> entries);
 
+  void ensureEntriesLengthMod(List<E> entries);
+
   T createInstanceWithValues(List<N> values) =>
       createInstanceWithEntries(values.length, valuesToEntries(values));
+
+  T createInstanceFullOfValue(int size, N value) {
+    var o = createInstance(size);
+    o.setAllEntriesWithValue(value);
+    return o;
+  }
 
   E entryOperationSum(E entry1, E entry2);
 
@@ -878,6 +1046,12 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   N entryOperationSumLane(E entry);
 
+  N entryOperationSumLanePartial(E entry, int size);
+
+  N entryOperationSumSquaresLane(E entry);
+
+  N entryOperationSumSquaresLanePartial(E entry, int size);
+
   void multiplyTo(T other, T destiny);
 
   T multiply(T other);
@@ -886,22 +1060,22 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   T subtract(T other);
 
-  void multiplyEntryTo(E entry, T destiny);
+  void multiplyEntriesTo(E entry, T destiny);
 
-  void subtractEntryTo(E entry, T destiny);
+  void subtractEntriesTo(E entry, T destiny);
 
-  void multiplyEntryAddingTo(E entry, T destiny);
+  void multiplyEntriesAddingTo(E entry, T destiny);
 
-  T multiplyEntry(E entry);
+  T multiplyEntries(E entry);
 
   void multiplyValueTo(N value, T destiny) {
     var entry = createEntryFullOf(value);
-    multiplyEntryTo(entry, destiny);
+    multiplyEntriesTo(entry, destiny);
   }
 
   void multiplyValueAddingTo(N value, T destiny) {
     var entry = createEntryFullOf(value);
-    multiplyEntryAddingTo(entry, destiny);
+    multiplyEntriesAddingTo(entry, destiny);
   }
 
   int getValueEntryIndex(int valueIndex) => valueIndex ~/ entryBlockSize;
@@ -909,6 +1083,8 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   N getValueFromEntry(E entry, int offset);
 
   E setValueFromEntry(E entry, int offset, N value);
+
+  E addValueFromEntry(E entry, int offset, N value);
 
   E createEntry1(N v0) => throw UnsupportedError(_throwMessage_NoOpValues1);
 
@@ -921,16 +1097,34 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   E createEntry4(N v0, N v1, N v2, N v3) =>
       throw UnsupportedError(_throwMessage_NoOpValues4);
 
+  E createEntryFrom(E other, [N? v0, N? v1, N? v2, N? v3]) =>
+      throw UnsupportedError(_throwMessage_NoOpValues1);
+
+  E createEntry(List<N> values) {
+    switch (values.length) {
+      case 1:
+        return createEntry1(values[0]);
+      case 2:
+        return createEntry2(values[0], values[1]);
+      case 3:
+        return createEntry3(values[0], values[1], values[2]);
+      case 4:
+        return createEntry4(values[0], values[1], values[2], values[3]);
+      default:
+        throw StateError('Invalid values size: ${values.length}');
+    }
+  }
+
   E createEntryFullOf(N v);
 
   E get entryEmpty;
 
-  N createRandomValue(int scale);
+  N createRandomValue(N scale, [Random? rand]);
 
-  E createRandomEntry(int scale);
+  E createRandomEntry(N scale, [Random? rand]);
 
-  List<E> createRandomEntries(int size, int randomScale) =>
-      List.generate(size, (i) => createRandomEntry(randomScale));
+  List<E> createRandomEntries(int size, N randomScale, [Random? rand]) =>
+      List.generate(size, (i) => createRandomEntry(randomScale, rand));
 
   String get _throwMessage_NoOpValues1 =>
       'No operation with 1 value! Entry block size: $entryBlockSize';
@@ -959,6 +1153,14 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     setEntry(entryIndex, entry2);
   }
 
+  void addToValue(int valueIndex, N value) {
+    var entryIndex = getValueEntryIndex(valueIndex);
+    var offset = valueIndex - (entryIndex * entryBlockSize);
+    var entry = getEntry(entryIndex);
+    var entry2 = addValueFromEntry(entry, offset, value);
+    setEntry(entryIndex, entry2);
+  }
+
   void setEntryValues1(int entryIndex, N v0) =>
       setEntry(entryIndex, createEntry1(v0));
 
@@ -971,10 +1173,48 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   void setEntryValues4(int entryIndex, N v0, N v1, N v2, N v3) =>
       setEntry(entryIndex, createEntry4(v0, v1, v2, v3));
 
+  void setExtraValuesToZero() => setExtraValues(zero);
+
+  void setExtraValuesToOne() => setExtraValues(one);
+
   void setExtraValues(N value) {
+    var length = this.length;
     var capacity = this.capacity;
-    for (var i = length; i < capacity; ++i) {
-      setValue(i, value);
+    var extraSize = capacity - length;
+
+    if (extraSize == 0) return;
+
+    if (entryBlockSize == 4) {
+      var lastEntryIndex = entriesLength - 1;
+      var lastEntry = getEntry(lastEntryIndex);
+
+      E entry;
+
+      switch (extraSize) {
+        case 1:
+          {
+            entry = createEntryFrom(lastEntry, null, null, null, value);
+            break;
+          }
+        case 2:
+          {
+            entry = createEntryFrom(lastEntry, null, null, value, value);
+            break;
+          }
+        case 3:
+          {
+            entry = createEntryFrom(lastEntry, null, value, value, value);
+            break;
+          }
+        default:
+          throw StateError('Unreachable state: $extraSize / $entryBlockSize');
+      }
+
+      setEntry(lastEntryIndex, entry);
+    } else {
+      for (var i = length; i < capacity; ++i) {
+        setValue(i, value);
+      }
     }
   }
 
@@ -986,6 +1226,9 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   }
 
   List<N> get values => List.generate(length, (i) => getValue(i));
+
+  List<double> get valuesAsDouble =>
+      List.generate(length, (i) => getValue(i).toDouble());
 
   List<String> get valuesAsString =>
       List.generate(length, (i) => nToString(getValue(i)));
@@ -1075,7 +1318,9 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     return entries;
   }
 
-  void set(T other) {
+  void set(T other, [int? entriesLength]) {
+    entriesLength ??= this.entriesLength;
+
     for (var i = entriesLength - 1; i >= 0; --i) {
       var entry = other.getEntry(i);
       setEntry(i, entry);
@@ -1087,6 +1332,31 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   T normalize(Scale<N> scale) {
     var entries2 = entries.map((e) => normalizeEntry(e, scale)).toList();
     return createInstanceWithEntries(length, entries2);
+  }
+
+  double computeSumSquaresMean() {
+    return computeSumSquares() / length;
+  }
+
+  N computeSumSquares() {
+    var length = this.length;
+    if (length == 0) return toN(zero);
+
+    var entriesLength = this.entriesLength;
+
+    num total;
+    {
+      var lastEntry = getEntry(entriesLength - 1);
+      total = entryOperationSumSquaresLanePartial(lastEntry, lastEntryLength);
+    }
+
+    for (var i = entriesLength - 2; i >= 0; --i) {
+      var entry = getEntry(i);
+      var sumSquares = entryOperationSumSquaresLane(entry);
+      total += sumSquares;
+    }
+
+    return toN(total);
   }
 
   List<N> diff(List<N> values) =>
@@ -1101,10 +1371,10 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   double errorGlobalMean(List<N> output) => errors(output).mean;
 
-  double errorGlobalSquareMean(List<N> output) => errors(output).square.mean;
+  double errorGlobalSquareMean(List<N> output) => errors(output).squaresMean;
 
   double errorGlobalSquareMeanRoot(List<N> output) =>
-      errors(output).square.mean.squareRoot;
+      errors(output).squaresMean.squareRoot;
 
   @override
   String toString(
@@ -1130,7 +1400,7 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   String toStringValues([int maxValuesToString = 10]) {
     return length < maxValuesToString
-        ? '$values'
+        ? '$valuesAsString'
         : '${getValues(maxValuesToString)}...[#$length]';
   }
 
