@@ -1,3 +1,12 @@
+## 1.0.3
+
+- `ActivationFunction`:
+  - Added field `flatSpot` for `derivativeEntryWithFlatSpot()`.
+  - Added `ActivationFunctionLinear`.
+  - `ActivationFunctionSigmoid`: activation with bounds (-700 .. 700).
+- Improved collections and numeric extensions.
+- Improved `DataStatistics` and add `CSV` generator.
+
 ## 1.0.2
 
 - Expose fast math as an additional library.
