@@ -1,4 +1,4 @@
-## 1.0.3
+## 1.1.0
 
 - `ActivationFunction`:
   - Added field `flatSpot` for `derivativeEntryWithFlatSpot()`.
@@ -16,6 +16,12 @@
 - Added `SamplesSet`:
   - With per set computed `defaultTargetGlobalError`.
   - Automatic `removeConflicts`.
+- `Training`:
+  - Split into `Propagation` and `ParameterStrategy`, allowing other algorithms.
+  - Added `Backpropagation` with SIMD, smart learning rate and smart momentum.
+  - Added `iRprop+`.
+  - Added `TrainingLogger`.
+  - Added `selectInitialANN`.
 
 ## 1.0.2
 
