@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:eneural_net/eneural_net.dart';
 import 'package:test/test.dart';
 
@@ -170,6 +172,28 @@ void main() {
     });
   });
 
+  group('Signal', () {
+    test('SampleInt32x4', () {
+      for (var i = 0; i < 300; ++i) {
+        var values = List<int>.generate(i, (i) => i);
+        expect(
+            SignalInt32x4.from(values),
+            predicate<SignalInt32x4>(
+                (s) => equalsSignal(s, 4, values.length, values)));
+      }
+    });
+
+    test('SignalFloat32x4', () {
+      for (var i = 0; i < 300; ++i) {
+        var values = List<double>.generate(i + 1, (i) => i.toDouble());
+        expect(
+            SignalFloat32x4.from(values),
+            predicate<SignalFloat32x4>(
+                (s) => equalsSignal(s, 4, values.length, values)));
+      }
+    });
+  });
+
   group('Sample', () {
     test('SampleInt32x4', () {
       var scale = ScaleInt.ZERO_TO_ONE;
@@ -284,7 +308,7 @@ void main() {
     });
 
     test('ActivationFunctionSigmoidBoundedFast', () {
-      var af = ActivationFunctionSigmoidBoundedFast(6).activate;
+      var af = ActivationFunctionSigmoidBoundedFast(scale: 6).activate;
 
       showFunction(
           'activationFunctionSigmoidBoundedFast',
@@ -354,4 +378,22 @@ void showFunction(String name, Function(num n) f, num min, num max, num step,
       print('  $i -> $o');
     }
   }
+}
+
+bool equalsSignal<N extends num, E, T extends Signal<N, E, T>>(
+    T signal, int entryBlockSize, int length, List values) {
+  expect(signal.values, equals(values));
+  expect(signal.length, equals(length));
+
+  var entriesLength = length ~/ entryBlockSize;
+  if (length % 4 != 0) entriesLength++;
+  expect(signal.entriesLength, equals(entriesLength));
+
+  var capacity = entriesLength * entryBlockSize;
+  expect(signal.capacity, equals(capacity));
+
+  var lastEntryLength = length - max(0, (capacity - entryBlockSize));
+  expect(signal.lastEntryLength, equals(lastEntryLength));
+
+  return true;
 }
