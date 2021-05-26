@@ -22,6 +22,9 @@
   - Added `iRprop+`.
   - Added `TrainingLogger`.
   - Added `selectInitialANN`.
+- `ANN`:
+  - Optional bias neuron.
+  - Allow different `ActivationFunction` for each layer.
 
 ## 1.0.2
 
