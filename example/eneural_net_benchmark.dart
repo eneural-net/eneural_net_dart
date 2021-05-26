@@ -32,17 +32,22 @@ Chronometer runAnnFloat32x4(
     '1,1=0',
   ], scale, true);
 
-  var ann = ANN(scale, LayerFloat32x4(2, activationFunction), [3],
-      LayerFloat32x4(1, activationFunction));
+  var samplesSet = SamplesSet(samples, subject: 'xor');
+
+  var ann = ANN(
+      scale,
+      LayerFloat32x4(2, true, ActivationFunctionLinear()),
+      [HiddenLayerConfig(3, true, activationFunction)],
+      LayerFloat32x4(1, false, activationFunction));
 
   print(ann);
 
-  var backpropagation = Backpropagation(ann);
+  var backpropagation = Backpropagation(ann, samplesSet);
 
   var chronometer = Chronometer('Backpropagation').start();
 
   while (chronometer.operations < limit) {
-    backpropagation.train(samples, 100);
+    backpropagation.train(100, 0.01);
     chronometer.operations += samples.length * 100;
   }
 
