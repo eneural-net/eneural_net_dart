@@ -17,21 +17,30 @@ void main() {
     true, // Already normalized in the scale.
   );
 
+  var samplesSet = SamplesSet(samples, subject: 'xor');
+
   // The activation function to use in the ANN:
   var activationFunction = ActivationFunctionSigmoid();
 
   // The ANN using layers that can compute with Float32x4 (SIMD compatible type).
   var ann = ANN(
     scale,
-    LayerFloat32x4(2, activationFunction), // Input layer: 2 neurons
-    [3], // 1 Hidden layer: 3 neurons
-    LayerFloat32x4(1, activationFunction), // Output layer: 1 neuron
+    // Input layer: 2 neurons with linear activation function:
+    LayerFloat32x4(2, true, ActivationFunctionLinear()),
+    // 1 Hidden layer: 3 neurons with sigmoid activation function:
+    [HiddenLayerConfig(3, true, activationFunction)],
+    // Output layer: 1 neuron with sigmoid activation function:
+    LayerFloat32x4(1, false, activationFunction),
   );
 
   print(ann);
 
   // Training algorithm:
-  var backpropagation = Backpropagation(ann);
+  var backpropagation = Backpropagation(ann, samplesSet);
+
+  print(backpropagation);
+
+  print('\n---------------------------------------------------');
 
   var chronometer = Chronometer('Backpropagation').start();
 
@@ -39,14 +48,17 @@ void main() {
   // with max epochs per training session of 1000000 and
   // a max retry of 10 when a training session can't reach
   // the target global error:
-  var achievedTargetError = backpropagation.trainUntilGlobalError(samples,
-      targetGlobalError: 0.01, maxEpochs: 1000000, maxRetries: 10);
+  var achievedTargetError = backpropagation.trainUntilGlobalError(
+      targetGlobalError: 0.01, maxEpochs: 50000, maxRetries: 10);
 
   chronometer.stop(operations: backpropagation.totalTrainingActivations);
+
+  print('---------------------------------------------------\n');
 
   // Compute the current global error of the ANN:
   var globalError = ann.computeSamplesGlobalError(samples);
 
+  print('Samples Outputs:');
   for (var i = 0; i < samples.length; ++i) {
     var sample = samples[i];
 
@@ -62,8 +74,8 @@ void main() {
     print('- $i> $input -> $output ($expected) > error: ${output - expected}');
   }
 
-  print('globalError: $globalError');
-  print('achievedTargetError: $achievedTargetError');
+  print('\nglobalError: $globalError');
+  print('achievedTargetError: $achievedTargetError\n');
 
   print(chronometer);
 }
