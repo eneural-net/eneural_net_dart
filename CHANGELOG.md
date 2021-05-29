@@ -7,6 +7,9 @@
   - Improved `toString` numbers.
   - `Comparable`.
   - operator `+`.
+- `eneural_net_extensions`:
+  - Improved extensions.
+  - Improved documentation.
 
 ## 1.1.0
 
