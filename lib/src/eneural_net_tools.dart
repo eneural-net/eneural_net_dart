@@ -1,15 +1,19 @@
 import 'dart:math' as math;
 
+import 'package:intl/intl.dart';
 import 'package:swiss_knife/swiss_knife.dart';
 
 import 'eneural_net_extension.dart';
 
 /// A Chronometer useful for benchmarks.
-class Chronometer {
+class Chronometer implements Comparable<Chronometer> {
   /// The name/title of this chronometer.
   String name;
 
   Chronometer([this.name = 'Chronometer']);
+
+  Chronometer._(this.name, this.operations, this.failedOperations,
+      this._startTime, this._stopTime);
 
   DateTime? _startTime;
 
@@ -66,6 +70,22 @@ class Chronometer {
   /// the period ([elapsedTimeSec]) of this chronometer.
   double get hertz => computeHertz(operations);
 
+  String get hertzAsString => '${_formatNumber(hertz)} Hz';
+
+  String get operationsAsString => _formatNumber(operations);
+
+  String get failedOperationsAsString => _formatNumber(failedOperations);
+
+  static final NumberFormat _numberFormatDecimal =
+      NumberFormat.decimalPattern('en_US');
+
+  String _formatNumber(num n) {
+    var s = n > 10000
+        ? _numberFormatDecimal.format(n.toInt())
+        : _numberFormatDecimal.format(n);
+    return s;
+  }
+
   /// Computes hertz for n [operations].
   double computeHertz(int operations) {
     return operations / elapsedTimeSec;
@@ -85,8 +105,28 @@ class Chronometer {
   /// ```
   @override
   String toString() {
-    return '$name{elapsedTime: $elapsedTimeMs ms, hertz: $hertz Hz, ops: $operations${failedOperations != 0 ? ' (fails: $failedOperations)' : ''}, startTime: $_startTime, stopTime: $_stopTime}';
+    return '$name{ elapsedTime: $elapsedTimeMs ms'
+        ', hertz: $hertzAsString'
+        ', ops: $operationsAsString${failedOperations != 0 ? ' (fails: $failedOperationsAsString)' : ''}'
+        ', startTime: $_startTime .. +${elapsedTime.toStringUnit()} }';
   }
+
+  Chronometer operator +(Chronometer other) {
+    DateTime? end;
+    if (_stopTime != null && other._stopTime != null) {
+      end = _stopTime!.add(other.elapsedTime);
+    } else if (_stopTime != null) {
+      end = _stopTime;
+    } else if (other._stopTime != null) {
+      end = other._stopTime;
+    }
+
+    return Chronometer._(name, operations + other.operations,
+        failedOperations + other.failedOperations, _startTime, end);
+  }
+
+  @override
+  int compareTo(Chronometer other) => hertz.compareTo(other.hertz);
 }
 
 class DataStatistics<N extends num> extends DataEntry {
