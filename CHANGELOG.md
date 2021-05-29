@@ -1,3 +1,9 @@
+## 1.1.1
+
+- `eneural_net_fast_math.dart`:
+  - `exp`: Improved performance and input range bounded to -87..87.
+  - `expFloat32x4`: new SIMD Optimized Exponential function.
+
 ## 1.1.0
 
 - `ActivationFunction`:

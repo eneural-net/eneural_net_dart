@@ -6,6 +6,7 @@ THIS FAST MATH FUNCTIONS ARE BASED IN THE DART PACKAGE `Complex`:
  */
 
 import 'dart:math' as dart_math;
+import 'dart:typed_data';
 
 import 'eneural_net_fastmath_tables.dart';
 
@@ -105,71 +106,37 @@ double cosh(double x) {
   return (ya + yb) * 0.5;
 }
 
-/// Internal helper method for exponential function.
+/// Optimized Exponential function.
 ///
-/// [x] is the original argument of the exponential function.
+/// - [x] is bounded to `-87` to `87`, since bigger values won't have enough
+/// precision when stored at [Float32x4].
 ///
 /// NOTE: For higher precision use [expHighPrecision].
 double exp(double x) {
-  double intPartA;
-  double intPartB;
-  int intVal;
+  x = x.clamp(-87, 87);
+
+  var xInt = _expXToInt(x);
+  final xIdx = expIntTableMaxIndex + xInt;
 
   // Lookup exp(floor(x)).
   // intPartA will have the upper 22 bits, intPartB will have the lower
   // 52 bits.
-  if (x < 0.0) {
-    intVal = -x.toInt();
-
-    if (intVal > 746) {
-      return 0.0;
-    }
-
-    if (intVal > 709) {
-      // This will produce a subnormal output
-      final result = expHighPrecision(x + 40.19140625) / 285040095144011776.0;
-      return result;
-    }
-
-    if (intVal == 709) {
-      // exp(1.494140625) is nearly a machine number...
-      final result = expHighPrecision(x + 1.494140625) / 4.455505956692756620;
-      return result;
-    }
-
-    intVal++;
-
-    intPartA = expIntTableA[expIntTableMaxIndex - intVal];
-    intPartB = expIntTableB[expIntTableMaxIndex - intVal];
-
-    intVal = -intVal;
-  } else {
-    if (x == double.infinity) {
-      return double.infinity;
-    }
-
-    intVal = x.toInt();
-
-    if (intVal > 709) {
-      return double.infinity;
-    }
-
-    intPartA = expIntTableA[expIntTableMaxIndex + intVal];
-    intPartB = expIntTableB[expIntTableMaxIndex + intVal];
-  }
+  final intPartA = expIntTableA[xIdx];
+  final intPartB = expIntTableB[xIdx];
 
   // Get the fractional part of x, find the greatest multiple of 2^-10 less than
   // x and look up the exp function of it.
   // fracPartA will have the upper 22 bits, fracPartB the lower 52 bits.
-  final intFrac = ((x - intVal) * 1024.0).toInt();
-  final fracPartA = expFracTableA[intFrac];
-  final fracPartB = expFracTableB[intFrac];
+  final fracInt = ((x - xInt) * 1024.0).toInt();
+
+  final fracPartA = expFracTableA[fracInt];
+  final fracPartB = expFracTableB[fracInt];
 
   // epsilon is the difference in x from the nearest multiple of 2^-10.  It
   // has a value in the range 0 <= epsilon < 2^-10.
   // Do the subtraction from x as the last step to avoid possible
-  // loss of percison.
-  final epsilon = x - (intVal + intFrac / 1024.0);
+  // loss of precision.
+  final epsilon = x - (xInt + fracInt / 1024.0);
 
   // Compute z = exp(epsilon) - 1.0 via a minimax polynomial.  z has
   // full double precision (52 bits).  Since z < 2^-10, we will have
@@ -178,11 +145,11 @@ double exp(double x) {
 
   // Remez generated polynomial.  Converges on the interval [0, 2^-10], error
   // is less than 0.5 ULP
-  var z = 0.04168701738764507;
-  z = z * epsilon + 0.1666666505023083;
-  z = z * epsilon + 0.5000000000042687;
-  z = z * epsilon + 1.0;
-  z = z * epsilon + -3.940510424527919E-20;
+  var o = 0.04168701738764507;
+  o = o * epsilon + 0.1666666505023083;
+  o = o * epsilon + 0.5000000000042687;
+  o = o * epsilon + 1.0;
+  o = o * epsilon + -3.940510424527919E-20;
 
   // Compute (intPartA+intPartB) * (fracPartA+fracPartB) by binomial
   // expansion.
@@ -197,7 +164,117 @@ double exp(double x) {
   // much larger than the others.  If there are extra bits specified from the
   // pow() function, use them.
   final tempC = tempB + tempA;
-  var result = tempC * z + tempB + tempA;
+  var result = tempC * o + tempB + tempA;
+
+  return result;
+}
+
+int _expXToInt(double v) {
+  if (v < 0) {
+    return v.toInt() - 1;
+  } else {
+    return v.toInt();
+  }
+}
+
+Float32x4 _float32x4__87 = Float32x4.splat(-87);
+Float32x4 _float32x4_87 = Float32x4.splat(87);
+Float32x4 _float32x4_1024 = Float32x4.splat(1024.0);
+Float32x4 _float32x4_0_04168701738764507 = Float32x4.splat(0.04168701738764507);
+Float32x4 _float32x4_0_1666666505023083 = Float32x4.splat(0.1666666505023083);
+Float32x4 _float32x4_0_5000000000042687 = Float32x4.splat(0.5000000000042687);
+Float32x4 _float32x4_1_0 = Float32x4.splat(1.0);
+Float32x4 _float32x4__3_940510424527919E_20 =
+    Float32x4.splat(-3.940510424527919E-20);
+
+/// SIMD Optimized Exponential function.
+///
+/// Author: Graciliano Monteiro Passos
+Float32x4 expFloat32x4(Float32x4 entry) {
+  entry = entry.clamp(_float32x4__87, _float32x4_87);
+
+  final x = entry.x;
+  final y = entry.y;
+  final z = entry.z;
+  final w = entry.w;
+
+  var xInt = _expXToInt(x);
+  var yInt = _expXToInt(y);
+  var zInt = _expXToInt(z);
+  var wInt = _expXToInt(w);
+
+  final xIdx = expIntTableMaxIndex + xInt;
+  final yIdx = expIntTableMaxIndex + yInt;
+  final zIdx = expIntTableMaxIndex + zInt;
+  final wIdx = expIntTableMaxIndex + wInt;
+
+  // Lookup exp(floor(x)).
+  // intPartA will have the upper 22 bits, intPartB will have the lower
+  // 52 bits.
+  final intPartA = Float32x4(expIntTableA[xIdx], expIntTableA[yIdx],
+      expIntTableA[zIdx], expIntTableA[wIdx]);
+  final intPartB = Float32x4(expIntTableB[xIdx], expIntTableB[yIdx],
+      expIntTableB[zIdx], expIntTableB[wIdx]);
+
+  final entryInt = Float32x4(
+      xInt.toDouble(), yInt.toDouble(), zInt.toDouble(), wInt.toDouble());
+
+  // Get the fractional part of x, find the greatest multiple of 2^-10 less than
+  // x and look up the exp function of it.
+  // fracPartA will have the upper 22 bits, fracPartB the lower 52 bits.
+  final frac = ((entry - entryInt) * _float32x4_1024);
+
+  final fracIntX = frac.x.toInt();
+  final fracIntY = frac.y.toInt();
+  final fracIntZ = frac.z.toInt();
+  final fracIntW = frac.w.toInt();
+
+  final fracPartA = Float32x4(expFracTableA[fracIntX], expFracTableA[fracIntY],
+      expFracTableA[fracIntZ], expFracTableA[fracIntW]);
+  final fracPartB = Float32x4(expFracTableB[fracIntX], expFracTableB[fracIntY],
+      expFracTableB[fracIntZ], expFracTableB[fracIntW]);
+
+  // epsilon is the difference in x from the nearest multiple of 2^-10.  It
+  // has a value in the range 0 <= epsilon < 2^-10.
+  // Do the subtraction from x as the last step to avoid possible
+  // loss of precision.
+  final epsilon = entry -
+      (entryInt +
+          Float32x4(
+                fracIntX.toDouble(),
+                fracIntY.toDouble(),
+                fracIntZ.toDouble(),
+                fracIntW.toDouble(),
+              ) /
+              _float32x4_1024);
+
+  // Compute z = exp(epsilon) - 1.0 via a minimax polynomial.  z has
+  // full double precision (52 bits).  Since z < 2^-10, we will have
+  // 62 bits of precision when combined with the contant 1.  This will be
+  // used in the last addition below to get proper rounding.
+
+  // Remez generated polynomial.  Converges on the interval [0, 2^-10], error
+  // is less than 0.5 ULP
+  var o = _float32x4_0_04168701738764507;
+  o = o * epsilon + _float32x4_0_1666666505023083;
+  o = o * epsilon + _float32x4_0_5000000000042687;
+  o = o * epsilon + _float32x4_1_0;
+  o = o * epsilon + _float32x4__3_940510424527919E_20;
+
+  // Compute (intPartA+intPartB) * (fracPartA+fracPartB) by binomial
+  // expansion.
+  // tempA is exact since intPartA and intPartB only have 22 bits each.
+  // tempB will have 52 bits of precision.
+  final tempA = intPartA * fracPartA;
+  final tempB =
+      intPartA * fracPartB + intPartB * fracPartA + intPartB * fracPartB;
+
+  // Compute the result.  (1+z)(tempA+tempB).  Order of operations is
+  // important.  For accuracy add by increasing size.  tempA is exact and
+  // much larger than the others.  If there are extra bits specified from the
+  // pow() function, use them.
+  final tempC = tempB + tempA;
+  final result = tempC * o + tempB + tempA;
 
   return result;
 }
