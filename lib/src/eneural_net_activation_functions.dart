@@ -3,42 +3,66 @@ import 'dart:typed_data';
 
 import 'eneural_net_fastmath.dart' as fast_math;
 
-enum ActivationFunctionScope { input, hidden, output, any }
+/// Scope of the activation function.
+enum ActivationFunctionScope {
+  /// Input layers.
+  input,
 
+  /// Hidden layers.
+  hidden,
+
+  /// Output layers.
+  output,
+
+  /// Any layer.
+  any,
+}
+
+/// Base class for Activation Functions.
 abstract class ActivationFunction<N extends num, E> {
   static const double TOO_SMALL = -1.0E20;
   static const double TOO_BIG = 1.0E20;
 
+  final String name;
   final double initialWeightScale;
   final double initialWeightBiasValue;
   final double flatSpot;
 
-  const ActivationFunction(this.initialWeightScale,
+  const ActivationFunction(this.name, this.initialWeightScale,
       {this.initialWeightBiasValue = 0.0, this.flatSpot = 0.0001});
 
+  /// Scopes where this activation function should be used.
   List<ActivationFunctionScope> get scope;
 
+  /// Generates a random weight compatible with this activation function.
   double createRandomWeight(Random random, {double? scale}) {
     scale ??= initialWeightScale;
     return (random.nextDouble() * (scale * 2)) - scale;
   }
 
+  /// Generates a [List] of random weights compatible with this activation function.
   List<double> createRandomWeights(Random random, int length, {double? scale}) {
     return List.generate(length, (index) => createRandomWeight(random));
   }
 
+  /// The activation function.
   N activate(N x);
 
+  /// The activation function for an entry (SIMD).
   E activateEntry(E entry);
 
+  /// The derivative function.
   N derivative(N o);
 
+  /// The derivative function with `flat spot`.
   N derivativeWithFlatSpot(N o) {
     return derivative(o);
   }
 
+  /// The derivative function for an entry (SIMD).
   E derivativeEntry(E entry);
 
+  /// The derivative function for an entry with `flat spot` (SIMD).
   E derivativeEntryWithFlatSpot(E entry) {
     return derivativeEntry(entry);
   }
@@ -47,9 +71,35 @@ abstract class ActivationFunction<N extends num, E> {
   String toString() => runtimeType.toString();
 }
 
-class ActivationFunctionLinear extends ActivationFunction<double, Float32x4> {
-  const ActivationFunctionLinear({double initialWeightScale = 1})
-      : super(initialWeightScale);
+/// Base class for SIMD optimized functions using [Float32x4].
+abstract class ActivationFunctionFloat32x4
+    extends ActivationFunction<double, Float32x4> {
+  static final Float32x4 entryOfZeroes = Float32x4.splat(0.0);
+  static final Float32x4 entryOfOnes = Float32x4.splat(1.0);
+  static final Float32x4 entryOfMinusOnes = Float32x4.splat(-1.0);
+  static final Float32x4 entryOfHalf = Float32x4.splat(0.50);
+  static final Float32x4 entryOfTwos = Float32x4.splat(2.0);
+  static final Float32x4 entryOfTwosAndHalf = Float32x4.splat(2.5);
+  static final Float32x4 entryOfThrees = Float32x4.splat(3.0);
+
+  final Float32x4 entryFlatSpot;
+
+  ActivationFunctionFloat32x4(String name, double initialWeightScale,
+      {double initialWeightBiasValue = 0.0, double flatSpot = 0.0001})
+      : entryFlatSpot = Float32x4(flatSpot, flatSpot, flatSpot, flatSpot),
+        super(name, initialWeightScale,
+            initialWeightBiasValue: initialWeightBiasValue, flatSpot: flatSpot);
+}
+
+/// Linear Activation Function (SIMD optimized).
+class ActivationFunctionLinear extends ActivationFunctionFloat32x4 {
+  late final Float32x4 entryFlatSpotPlusOne;
+
+  ActivationFunctionLinear({double initialWeightScale = 1})
+      : super('Linear', initialWeightScale) {
+    entryFlatSpotPlusOne =
+        entryFlatSpot + ActivationFunctionFloat32x4.entryOfOnes;
+  }
 
   static final List<ActivationFunctionScope> _scope =
       List.unmodifiable([ActivationFunctionScope.input]);
@@ -79,28 +129,35 @@ class ActivationFunctionLinear extends ActivationFunction<double, Float32x4> {
 
   @override
   Float32x4 derivativeEntry(Float32x4 entry) {
+    return ActivationFunctionFloat32x4.entryOfOnes;
+    /*
     return Float32x4(
       1.0,
       1.0,
       1.0,
       1.0,
     );
+     */
   }
 
   @override
   Float32x4 derivativeEntryWithFlatSpot(Float32x4 entry) {
+    return entryFlatSpotPlusOne;
+    /*
     return Float32x4(
       1.0 + flatSpot,
       1.0 + flatSpot,
       1.0 + flatSpot,
       1.0 + flatSpot,
     );
+     */
   }
 }
 
-class ActivationFunctionSigmoid extends ActivationFunction<double, Float32x4> {
-  const ActivationFunctionSigmoid({double initialWeightScale = 1})
-      : super(initialWeightScale);
+/// Sigmoid Activation Function (SIMD optimized).
+class ActivationFunctionSigmoid extends ActivationFunctionFloat32x4 {
+  ActivationFunctionSigmoid({double initialWeightScale = 1})
+      : super('Sigmoid', initialWeightScale);
 
   static final List<ActivationFunctionScope> _scope = List.unmodifiable(
       [ActivationFunctionScope.hidden, ActivationFunctionScope.output]);
@@ -110,23 +167,22 @@ class ActivationFunctionSigmoid extends ActivationFunction<double, Float32x4> {
 
   @override
   double activate(double x) {
-    if (x < -700) {
-      return 0.0;
-    } else if (x > 700) {
-      return 1.0;
-    }
-
     return 1 / (1 + fast_math.exp(-x));
   }
 
   @override
   Float32x4 activateEntry(Float32x4 entry) {
+    return ActivationFunctionFloat32x4.entryOfOnes /
+        (ActivationFunctionFloat32x4.entryOfOnes +
+            fast_math.expFloat32x4(-entry));
+    /*
     return Float32x4(
       activate(entry.x),
       activate(entry.y),
       activate(entry.z),
       activate(entry.w),
     );
+     */
   }
 
   @override
@@ -141,29 +197,36 @@ class ActivationFunctionSigmoid extends ActivationFunction<double, Float32x4> {
 
   @override
   Float32x4 derivativeEntry(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry);
+    /*
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
       entry.z * (1.0 - entry.z),
       entry.w * (1.0 - entry.w),
     );
+     */
   }
 
   @override
   Float32x4 derivativeEntryWithFlatSpot(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry) +
+        entryFlatSpot;
+    /*
     return Float32x4(
       entry.x * (1.0 - entry.x) + flatSpot,
       entry.y * (1.0 - entry.y) + flatSpot,
       entry.z * (1.0 - entry.z) + flatSpot,
       entry.w * (1.0 - entry.w) + flatSpot,
     );
+     */
   }
 }
 
-class ActivationFunctionSigmoidFast
-    extends ActivationFunction<double, Float32x4> {
-  const ActivationFunctionSigmoidFast({double initialWeightScale = 1})
-      : super(initialWeightScale);
+/// Fast Pseudo-Sigmoid Activation Function (SIMD optimized).
+class ActivationFunctionSigmoidFast extends ActivationFunctionFloat32x4 {
+  ActivationFunctionSigmoidFast({double initialWeightScale = 1})
+      : super('SigmoidFast', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
@@ -176,12 +239,19 @@ class ActivationFunctionSigmoidFast
 
   @override
   Float32x4 activateEntry(Float32x4 entry) {
+    entry = entry * ActivationFunctionFloat32x4.entryOfThrees;
+    return ActivationFunctionFloat32x4.entryOfHalf +
+        ((entry) /
+            (ActivationFunctionFloat32x4.entryOfTwosAndHalf + entry.abs()) /
+            ActivationFunctionFloat32x4.entryOfTwos);
+    /*
     return Float32x4(
       activate(entry.x),
       activate(entry.y),
       activate(entry.z),
       activate(entry.w),
     );
+     */
   }
 
   @override
@@ -191,51 +261,70 @@ class ActivationFunctionSigmoidFast
 
   @override
   Float32x4 derivativeEntry(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry);
+    /*
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
       entry.z * (1.0 - entry.z),
       entry.w * (1.0 - entry.w),
     );
+     */
+  }
+
+  @override
+  Float32x4 derivativeEntryWithFlatSpot(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry) +
+        entryFlatSpot;
   }
 }
 
-class ActivationFunctionSigmoidBoundedFast
-    extends ActivationFunction<double, Float32x4> {
+/// Fast Pseudo-Sigmoid Activation Function Bounded (SIMD optimized).
+class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
   final double lowerLimit;
+
+  final Float32x4 _entryLowerLimit;
 
   final double upperLimit;
 
+  final Float32x4 _entryUpperLimit;
+
   final double scale;
 
-  const ActivationFunctionSigmoidBoundedFast(
+  ActivationFunctionSigmoidBoundedFast(
       {this.scale = 6, double initialWeightScale = 2})
       : lowerLimit = -scale,
+        _entryLowerLimit = Float32x4.splat(-scale),
         upperLimit = scale,
-        super(initialWeightScale);
+        _entryUpperLimit = Float32x4.splat(scale),
+        super('SigmoidBoundedFast', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
 
   @override
   double activate(double x) {
-    if (x < lowerLimit) {
-      return 0.0;
-    } else if (x > upperLimit) {
-      return 1.0;
-    }
+    x = x.clamp(lowerLimit, upperLimit);
     x = x / scale;
     return 0.5 + (x / (1 + (x * x)));
   }
 
   @override
   Float32x4 activateEntry(Float32x4 entry) {
+    entry = entry.clamp(_entryLowerLimit, _entryUpperLimit);
+    entry = entry * ActivationFunctionFloat32x4.entryOfThrees;
+    return ActivationFunctionFloat32x4.entryOfHalf +
+        ((entry) /
+            (ActivationFunctionFloat32x4.entryOfTwosAndHalf + entry.abs()) /
+            ActivationFunctionFloat32x4.entryOfTwos);
+    /*
     return Float32x4(
       activate(entry.x),
       activate(entry.y),
       activate(entry.z),
       activate(entry.w),
     );
+     */
   }
 
   @override
@@ -245,19 +334,29 @@ class ActivationFunctionSigmoidBoundedFast
 
   @override
   Float32x4 derivativeEntry(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry);
+    /*
     return Float32x4(
       entry.x * (1.0 - entry.x),
       entry.y * (1.0 - entry.y),
       entry.z * (1.0 - entry.z),
       entry.w * (1.0 - entry.w),
     );
+     */
+  }
+
+  @override
+  Float32x4 derivativeEntryWithFlatSpot(Float32x4 entry) {
+    return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry) +
+        entryFlatSpot;
   }
 }
 
+/// Experimental Integer Sigmoid Function (scale 100).
 class ActivationFunctionSigmoidFastInt100
     extends ActivationFunction<int, Int32x4> {
   const ActivationFunctionSigmoidFastInt100([double initialWeightScale = 10])
-      : super(initialWeightScale);
+      : super('SigmoidFastInt100', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
@@ -293,6 +392,7 @@ class ActivationFunctionSigmoidFastInt100
   }
 }
 
+/// Experimental Integer Sigmoid Function.
 class ActivationFunctionSigmoidFastInt
     extends ActivationFunction<int, Int32x4> {
   final int scaleCenter;
@@ -301,7 +401,7 @@ class ActivationFunctionSigmoidFastInt
   const ActivationFunctionSigmoidFastInt(this.scaleMax,
       [double initialWeightScale = 10])
       : scaleCenter = scaleMax ~/ 2,
-        super(initialWeightScale);
+        super('SigmoidFastInt', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;

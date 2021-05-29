@@ -1,5 +1,11 @@
 ## 1.1.1
 
+- `ActivationFunction`:
+  - Added base class `ActivationFunctionFloat32x4`.
+  - SIMD Optimization:
+    - Improved performance in 2x.
+    - `ActivationFunctionLinear`, `ActivationFunctionSigmoid`,
+      `ActivationFunctionSigmoidFast`, `ActivationFunctionSigmoidBoundedFast`.
 - `eneural_net_fast_math.dart`:
   - `exp`: Improved performance and input range bounded to -87..87.
   - `expFloat32x4`: new SIMD Optimized Exponential function.
