@@ -1,14 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:eneural_net/eneural_net.dart';
-import 'package:eneural_net/src/eneural_net_extension.dart';
 
 void main() {
-  var totalOperations = 4000000;
+  var totalOperations = 40000000;
 
   var allBenchmarks = <Chronometer?>[];
 
-  for (var i = 0; i < 2; ++i) {
+  for (var i = 0; i < 10; ++i) {
     print('\n==========================================================\n');
 
     var benchmarks = <Chronometer>[];
@@ -62,59 +61,32 @@ void benchmark(List<Chronometer> allBenchmarks, int sessions,
   allBenchmarks.add(results.last);
 }
 
+var in1 = Float32x4(0.0, 0.25, 0.50, 1.0);
+var in2 = Float32x4(1.0, 0.50, 0.25, 0.0);
+var in3 = Float32x4(-6.0, -3.0, 3.0, 6.0);
+var in4 = Float32x4(-2.0, -1.0, 1.0, 2.0);
+var in5 = Float32x4(-12.0, -6.0, 6.0, 12.0);
+
 Chronometer runAnnFloat32x4(
     int limit, ActivationFunction<double, Float32x4> activationFunction) {
-  var scale = ScaleDouble.ZERO_TO_ONE;
+  print(activationFunction);
 
-  var samples = SampleFloat32x4.toListFromString([
-    '0,0=0',
-    '1,0=1',
-    '0,1=1',
-    '1,1=0',
-  ], scale, true);
+  var chronometer = Chronometer(activationFunction.name).start();
 
-  var samplesSet =
-      SamplesSet(samples, subject: 'xor[${activationFunction.name}]');
-
-  var ann = ANN(
-      scale,
-      LayerFloat32x4(2, true, ActivationFunctionLinear()),
-      [HiddenLayerConfig(3, true, activationFunction)],
-      LayerFloat32x4(1, false, activationFunction));
-
-  print(ann);
-
-  var training = Backpropagation(ann, samplesSet);
-  training.logProgressEnabled = true;
-
-  var title =
-      '${training.algorithmName}/${samplesSet.subject}/$activationFunction';
-
-  var chronometer = Chronometer(title).start();
+  var result = in1;
 
   while (chronometer.operations < limit) {
-    training.train(100, 0.000001);
-    chronometer.operations = training.totalTrainingActivations;
-    //print(chronometer.operations);
+    result = result * activationFunction.activateEntry(in1);
+    result = result * activationFunction.activateEntry(in2);
+    result = result * activationFunction.activateEntry(in3);
+    result = result * activationFunction.activateEntry(in4);
+    result = result * activationFunction.activateEntry(in5);
+    chronometer.operations += 5;
   }
 
   chronometer.stop();
 
-  var globalError = ann.computeSamplesGlobalError(samples);
-
-  for (var i = 0; i < samples.length; ++i) {
-    var sample = samples[i];
-
-    var input = sample.input;
-    var expected = sample.output;
-    ann.activate(input);
-    var output = ann.output;
-
-    print('$i> $input -> $output ($expected) > error: ${output - expected}');
-  }
-
-  print('globalError: $globalError');
-
+  print('result: $result');
   print(chronometer);
   print('');
 
