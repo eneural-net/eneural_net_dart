@@ -1,7 +1,10 @@
 import 'dart:math';
 
-import 'package:eneural_net/eneural_net.dart';
-import 'package:eneural_net/src/eneural_net_extension.dart';
+import 'eneural_net_ann.dart';
+import 'eneural_net_extension.dart';
+import 'eneural_net_sample.dart';
+import 'eneural_net_scale.dart';
+import 'eneural_net_signal.dart';
 
 /// A builder for [Training] instances.
 typedef TrainingBuilder<N extends num, E, T extends Signal<N, E, T>,
@@ -55,12 +58,15 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
   /// If true logging will be enabled.
   bool logEnabled = true;
 
+  /// If true logging of progress will be enabled.
+  bool logProgressEnabled = false;
+
   void logInfo(String message) {
     if (logEnabled) logger(this, 'INFO', message);
   }
 
   void logProgress(String message) {
-    if (logEnabled) logger(this, 'PROGRESS', message);
+    if (logEnabled && logProgressEnabled) logger(this, 'PROGRESS', message);
   }
 
   void logWarn(String message) {

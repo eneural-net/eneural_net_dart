@@ -220,10 +220,9 @@ class LayerInt32x4 extends Layer<int, Int32x4, SignalInt32x4, Scale<int>> {
 class LayerFloat32x4
     extends Layer<double, Float32x4, SignalFloat32x4, Scale<double>> {
   LayerFloat32x4(int size, bool withBiasNeuron,
-      [ActivationFunction<double, Float32x4> activationFunction =
-          const ActivationFunctionSigmoid()])
+      [ActivationFunction<double, Float32x4>? activationFunction])
       : super._(SignalFloat32x4((withBiasNeuron ? size + 1 : size)),
-            withBiasNeuron, activationFunction);
+            withBiasNeuron, activationFunction ?? ActivationFunctionSigmoid());
 }
 
 /// Base class for [ANN] layers.

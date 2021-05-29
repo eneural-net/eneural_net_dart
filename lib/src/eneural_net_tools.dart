@@ -80,7 +80,7 @@ class Chronometer implements Comparable<Chronometer> {
       NumberFormat.decimalPattern('en_US');
 
   String _formatNumber(num n) {
-    var s = n > 10000
+    var s = n.isFinite && n > 10000
         ? _numberFormatDecimal.format(n.toInt())
         : _numberFormatDecimal.format(n);
     return s;

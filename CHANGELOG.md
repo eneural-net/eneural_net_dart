@@ -16,6 +16,8 @@
 - `eneural_net_extensions`:
   - Improved extensions.
   - Improved documentation.
+- `Training`:
+  - Added `logProgressEnabled`.
 
 ## 1.1.0
 
