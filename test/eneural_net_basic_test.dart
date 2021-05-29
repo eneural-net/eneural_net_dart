@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:eneural_net/eneural_net.dart';
 import 'package:test/test.dart';
@@ -261,6 +262,29 @@ void main() {
       expect(af(0), equals(yAt0));
       expect(af(1), equals(yAt0 + (yAt0 - yAt1)));
 
+      expect(af(-2) < 0.12, isTrue);
+      expect(af(2) > 0.88, isTrue);
+
+      expect(af(-4) < 0.018, isTrue);
+      expect(af(4) > 0.982, isTrue);
+
+      expect(af(-6) < 0.0025, isTrue);
+      expect(af(6) > 0.9975, isTrue);
+
+      expect(af(-10) < 0.00005, isTrue);
+      expect(af(10) > 0.99995, isTrue);
+    });
+
+    test('activationFunctionSigmoid[SIMD]', () {
+      var af = (double o) =>
+          ActivationFunctionSigmoid().activateEntry(Float32x4.splat(o)).x;
+
+      showFunction('activationFunctionSigmoid[SIMD]', (n) => af(n.toDouble()),
+          -12, 12, 1);
+
+      expect(af(-1), inExclusiveRange(0.268941425, 0.268941435));
+      expect(af(0), equals(0.50));
+      expect(af(1), inExclusiveRange(0.73105857, 0.731058599));
       expect(af(-2) < 0.12, isTrue);
       expect(af(2) > 0.88, isTrue);
 
