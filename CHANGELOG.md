@@ -18,6 +18,7 @@
   - Improved documentation.
 - `Training`:
   - Added `logProgressEnabled`.
+- intl: ^0.17.0
 
 ## 1.1.0
 
