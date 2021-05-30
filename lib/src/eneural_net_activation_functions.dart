@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'eneural_net_fastmath.dart' as fast_math;
+//import 'eneural_net_fastmath.dart' as fast_math;
 
 /// Scope of the activation function.
 enum ActivationFunctionScope {
@@ -167,15 +167,33 @@ class ActivationFunctionSigmoid extends ActivationFunctionFloat32x4 {
 
   @override
   double activate(double x) {
-    return 1 / (1 + fast_math.exp(-x));
+    return 1 / (1 + exp(-x));
+    //return 1 / (1 + fast_math.exp(-x));
   }
 
   @override
   Float32x4 activateEntry(Float32x4 entry) {
+    // New Dart v2.13.1 implementation of `exp` is very fast:
+    var exp32x4 = Float32x4(
+      exp(-entry.x),
+      exp(-entry.y),
+      exp(-entry.z),
+      exp(-entry.w),
+    );
+
+    return ActivationFunctionFloat32x4.entryOfOnes /
+        (ActivationFunctionFloat32x4.entryOfOnes + exp32x4);
+
+    /*
+    // SIMD version with `fast_math.expFloat32x4`
     return ActivationFunctionFloat32x4.entryOfOnes /
         (ActivationFunctionFloat32x4.entryOfOnes +
             fast_math.expFloat32x4(-entry));
+
+     */
+
     /*
+    // Non-SIMD version:
     return Float32x4(
       activate(entry.x),
       activate(entry.y),

@@ -1,3 +1,8 @@
+## 1.1.2
+
+- `ActivationFunctionSigmoid`:
+  - Changed to use new faster `dart:math.exp` function.
+
 ## 1.1.1
 
 - `ActivationFunction`:

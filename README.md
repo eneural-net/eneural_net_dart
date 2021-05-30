@@ -128,6 +128,8 @@ Backpropagation{elapsedTime: 111 ms, hertz: 83495.49549549549 Hz, ops: 9268, sta
 # SIMD (Single Instruction Multiple Data)
 
 Dart has support for SIMD when computation is made using [Float32x4] and [Int32x4].
+The Activation Functions are implemented using [Float32x4], improving
+performance by 1.5x to 2x, when compared to normal implementation.
 
 The basic principle with SIMD is to execute math operations simultaneously in 4 numbers.
 
@@ -220,35 +222,41 @@ is an experimental implementation to exercise an `ANN` based in integers.
 [e][dart_math_e], to the power x.
 
 This is an important `ANN` function, since is used by the popular
-Sigmoid function, and usually a high precision version is slow,
-but a high precision version is actually not necessary
-for Artificial Neural Networks, opening the opportunity
-for implementations that are just an approximation.
+Sigmoid function, and usually a high precision version is slow
+and approximation versions can be used for most `ANN` models and training
+algorithms.
 
 [dart_math_e]: https://api.dart.dev/stable/2.12.1/dart-math/e-constant.html
 [dart_math_exp]: https://api.dart.dev/stable/2.12.1/dart-math/exp.html
 
 # Fast Math
 
-An internal fast math library is used to compute `ActivationFunctionSigmoid`.
+An internal Fast Math library is present and can be used for platforms
+that are not efficient to compute `exp` (Exponential function).
 
-If you want you can import this library and use it in your projects:
+You can import this library and use it to create a specialized
+`ActivationFunction` implementation or use it in any kind of project:
 
 ```dart
 import 'package:eneural_net/eneural_net_fast_math.dart' as fast_math ;
 
 void main() {
-  // Fast `exp` function:
-  fast_math.exp(2);
+  // Fast Exponential function:
+  var o = fast_math.exp(2);
 
-  // Fast high precision `exp` function:
+  // Fast Exponential function with high precision:
   var highPrecision = <double>[0.0 , 0.0];
-  fast_math.expHighPrecision(2, 0.0, highPrecision);
+  var oHighPrecision = fast_math.expHighPrecision(2, 0.0, highPrecision);
+  
+  // Fast Exponential function with SIMD acceleration:
+  var o32x4 = fast_math.expFloat32x4( Float32x4(2,3,4,5) );
 }
 ```
 
 The implementation is based in the Dart package [Complex](https://pub.dev/packages/complex):
 - https://github.com/rwl/complex/blob/master/lib/src/fastmath.dart
+
+The `fast_math.expFloat32x4` function was created by Graciliano M. Passos ([gmpassos@GitHub][github]).
 
 # eNeural.net
 

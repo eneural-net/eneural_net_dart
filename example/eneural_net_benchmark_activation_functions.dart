@@ -2,34 +2,29 @@ import 'dart:typed_data';
 
 import 'package:eneural_net/eneural_net.dart';
 
-void main() {
+void main() async {
   var totalOperations = 40000000;
+
+  var activationFunctions = <ActivationFunction<double, Float32x4>>[
+    ActivationFunctionSigmoid(),
+    ActivationFunctionSigmoidFast(),
+    ActivationFunctionSigmoidBoundedFast(),
+  ];
 
   var allBenchmarks = <Chronometer?>[];
 
-  for (var i = 0; i < 10; ++i) {
+  for (var i = 0; i < 3; ++i) {
     print('\n==========================================================\n');
 
     var benchmarks = <Chronometer>[];
 
-    benchmark(benchmarks, 3,
-        () => runAnnFloat32x4(totalOperations, ActivationFunctionSigmoid()));
+    for (var af in activationFunctions) {
+      var bestResult =
+          benchmark(benchmarks, 3, () => runAnnFloat32x4(totalOperations, af));
 
-    print('------------------\n');
-
-    benchmark(
-        benchmarks,
-        3,
-        () =>
-            runAnnFloat32x4(totalOperations, ActivationFunctionSigmoidFast()));
-
-    print('------------------\n');
-
-    benchmark(
-        benchmarks,
-        3,
-        () => runAnnFloat32x4(
-            totalOperations, ActivationFunctionSigmoidBoundedFast()));
+      print('bestResult: $bestResult > $af');
+      print('------------------\n');
+    }
 
     print('----------------------------------------------------------\n');
 
@@ -48,7 +43,7 @@ void main() {
   }
 }
 
-void benchmark(List<Chronometer> allBenchmarks, int sessions,
+Chronometer benchmark(List<Chronometer> allBenchmarks, int sessions,
     Chronometer Function() runner) {
   var results = <Chronometer>[];
 
@@ -58,7 +53,11 @@ void benchmark(List<Chronometer> allBenchmarks, int sessions,
   }
 
   results.sort();
-  allBenchmarks.add(results.last);
+
+  var bestResult = results.last;
+  allBenchmarks.add(bestResult);
+
+  return bestResult;
 }
 
 var in1 = Float32x4(0.0, 0.25, 0.50, 1.0);
