@@ -17,7 +17,6 @@ abstract class Propagation<
   late T _outputErrors;
 
   late final List<T> _layersGradientsDeltas;
-  late final List<T> _layersPreviousGradientsDeltas;
 
   late final List<List<T>> _layersPreviousUpdateDelta;
   late final List<List<T>> _layersNoImprovementCounter;
@@ -38,10 +37,6 @@ abstract class Propagation<
     _outputErrors.setAllEntriesWithValue(_outputErrors.one);
 
     _layersGradientsDeltas = ann.allLayers
-        .map((l) => l.neurons.createInstanceOfSameLength())
-        .toList();
-
-    _layersPreviousGradientsDeltas = ann.allLayers
         .map((l) => l.neurons.createInstanceOfSameLength())
         .toList();
 
@@ -147,10 +142,6 @@ abstract class Propagation<
       l.setAllEntriesEmpty();
     }
 
-    for (var l in _layersPreviousGradientsDeltas) {
-      l.setAllEntriesEmpty();
-    }
-
     for (var weightsUpdateDelta in _layersPreviousUpdateDelta) {
       for (var updateDeltas in weightsUpdateDelta) {
         updateDeltas.setAllEntriesWithValue(updateDeltas.toN(0.10));
@@ -223,7 +214,6 @@ abstract class Propagation<
     var lastLayer = allLayers[lastIndex];
 
     ann.resetGradients();
-    _resetGradientsDeltas();
 
     var allSamplesError = 0.0;
 
@@ -264,16 +254,6 @@ abstract class Propagation<
     }
 
     return false;
-  }
-
-  void _resetGradientsDeltas() {
-    for (var i = 0; i < _layersGradientsDeltas.length; ++i) {
-      var gradientsDeltas = _layersGradientsDeltas[i];
-      var previousGradientsDeltas = _layersPreviousGradientsDeltas[i];
-
-      previousGradientsDeltas.setAllEntriesWith(gradientsDeltas);
-      gradientsDeltas.setAllEntriesEmpty();
-    }
   }
 
   void _backPropagateMiddleLayerError(Layer<N, E, T, S> layer, int layerIndex) {

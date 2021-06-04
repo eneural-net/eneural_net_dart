@@ -39,12 +39,56 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
       SignalInt32x4._(Int32x4List.fromList(entries), size);
 
   @override
+  String get format => 'Int32x4';
+
+  @override
   int calcEntriesCapacityForSize(int size) =>
       Signal.calcNeededBlocksChunks(size, 4, 4);
 
   @override
   SignalInt32x4 copy() =>
       SignalInt32x4._(Int32x4List.fromList(_entries), _size);
+
+  @override
+  List<int> get values {
+    final lastEntryIndex = entriesLength - 1;
+    var entryIndex = 0;
+    var entry = _entries.first;
+    var entryCursor = -1;
+    var valueCursor = -1;
+
+    var list = List.generate(length, (i) {
+      assert(++valueCursor == i);
+
+      switch (++entryCursor) {
+        case 0:
+          {
+            return entry.x;
+          }
+        case 1:
+          {
+            return entry.y;
+          }
+        case 2:
+          {
+            return entry.z;
+          }
+        case 3:
+          {
+            var w = entry.w;
+            if (entryIndex < lastEntryIndex) {
+              entry = _entries[++entryIndex];
+              entryCursor = -1;
+            }
+            return w;
+          }
+        default:
+          throw StateError('Invalid entryCursor: $entryCursor');
+      }
+    });
+
+    return list;
+  }
 
   @override
   int get zero => 0;
@@ -418,6 +462,9 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
       SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
 
   @override
+  String get format => 'Float32x4Mod4';
+
+  @override
   SignalFloat32x4Mod4 createInstance(int size) => SignalFloat32x4Mod4(size);
 
   @override
@@ -579,6 +626,9 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
       SignalFloat32x4._(Float32x4List.fromList(entries), size);
 
   @override
+  String get format => 'Float32x4';
+
+  @override
   int calcEntriesCapacityForSize(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 1);
 
@@ -608,6 +658,50 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   @override
   SignalFloat32x4 copy() =>
       SignalFloat32x4._(Float32x4List.fromList(_entries), _size);
+
+  @override
+  List<double> get values {
+    final lastEntryIndex = entriesLength - 1;
+    var entryIndex = 0;
+    var entry = _entries.first;
+    var entryCursor = -1;
+    var valueCursor = -1;
+
+    var list = List.generate(length, (i) {
+      assert(++valueCursor == i);
+
+      switch (++entryCursor) {
+        case 0:
+          {
+            return entry.x;
+          }
+        case 1:
+          {
+            return entry.y;
+          }
+        case 2:
+          {
+            return entry.z;
+          }
+        case 3:
+          {
+            var w = entry.w;
+            if (entryIndex < lastEntryIndex) {
+              entry = _entries[++entryIndex];
+              entryCursor = -1;
+            }
+            return w;
+          }
+        default:
+          throw StateError('Invalid entryCursor: $entryCursor');
+      }
+    });
+
+    return list;
+  }
+
+  @override
+  List<double> get valuesAsDouble => values;
 
   @override
   double get zero => 0.0;
@@ -913,6 +1007,55 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     if (capacity < size) blocks++;
     return blocks;
   }
+
+  static Signal<N, E, T>
+      fromFormat<N extends num, E, T extends Signal<N, E, T>>(
+    String format, {
+    int? size,
+    List<N>? values,
+    List<E>? entries,
+  }) {
+    switch (format) {
+      case 'Float32x4':
+        {
+          if (values != null) {
+            return SignalFloat32x4.from(values.asDoubles()) as Signal<N, E, T>;
+          } else if (entries != null) {
+            return SignalFloat32x4.fromEntries(
+                entries as List<Float32x4>, size!) as Signal<N, E, T>;
+          } else {
+            return SignalFloat32x4(size!) as Signal<N, E, T>;
+          }
+        }
+      case 'Int32x4':
+        {
+          if (values != null) {
+            return SignalInt32x4.from(values.asInts()) as Signal<N, E, T>;
+          } else if (entries != null) {
+            return SignalInt32x4.fromEntries(entries as List<Int32x4>, size!)
+                as Signal<N, E, T>;
+          } else {
+            return SignalInt32x4(size!) as Signal<N, E, T>;
+          }
+        }
+      case 'Float32x4Mod4':
+        {
+          if (values != null) {
+            return SignalFloat32x4Mod4.from(values.asDoubles())
+                as Signal<N, E, T>;
+          } else if (entries != null) {
+            return SignalFloat32x4Mod4.fromEntries(
+                entries as List<Float32x4>, size!) as Signal<N, E, T>;
+          } else {
+            return SignalFloat32x4Mod4(size!) as Signal<N, E, T>;
+          }
+        }
+      default:
+        throw StateError('Unknown format: $format');
+    }
+  }
+
+  String get format;
 
   @override
   N operator [](int valueIndex) => getValue(valueIndex);

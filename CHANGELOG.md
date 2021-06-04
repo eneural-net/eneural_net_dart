@@ -1,3 +1,10 @@
+## 1.1.3
+
+- `Signal`:
+  - Added `format` and `fromFormat`.
+  - Optimize `values` implementation for each format.
+- `Propagation` remove unused `_layersPreviousGradientsDeltas`.
+
 ## 1.1.2
 
 - `ActivationFunctionSigmoid`:
