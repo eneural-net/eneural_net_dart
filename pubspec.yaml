@@ -8,7 +8,6 @@ environment:
 
 dependencies:
   collection: ^1.15.0
-  async_task: ^1.0.2
   swiss_knife: ^3.0.6
   intl: ^0.17.0
 

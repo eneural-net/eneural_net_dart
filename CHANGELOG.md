@@ -15,7 +15,6 @@
 - `Propagation` remove unused `_layersPreviousGradientsDeltas`.
 - Extension `ListExtension`:
  - Added `asDoubles` and `asInts`.
-- async_task: ^1.0.2
 
 ## 1.1.2
 
