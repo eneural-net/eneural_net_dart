@@ -9,6 +9,8 @@
   - Added `format` and `fromFormat`.
   - Optimize `values` implementation for each format.
 - `Propagation` remove unused `_layersPreviousGradientsDeltas`.
+- Extension `ListExtension`:
+ - Added `asDoubles` and `asInts`.
 
 ## 1.1.2
 

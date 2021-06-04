@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:eneural_net/eneural_net.dart';
+import 'package:swiss_knife/swiss_knife.dart';
 
 extension Int32x4Extension on Int32x4 {
   /// Converts to a [Float32x4].
@@ -294,6 +295,13 @@ extension ListExtension<T> on List<T> {
     removeRange(length - amount, length);
     return amount;
   }
+
+  List<double> asDoubles() => this is List<double>
+      ? this as List<double>
+      : map((v) => parseDouble(v)!).toList();
+
+  List<int> asInts() =>
+      this is List<int> ? this as List<int> : map((v) => parseInt(v)!).toList();
 }
 
 extension SetExtension<T> on Set<T> {
