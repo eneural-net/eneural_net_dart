@@ -51,6 +51,8 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   List<int> get values {
+    if (isEmpty) return <int>[];
+
     final lastEntryIndex = entriesLength - 1;
     var entryIndex = 0;
     var entry = _entries.first;
@@ -661,6 +663,8 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   List<double> get values {
+    if (isEmpty) return <double>[];
+
     final lastEntryIndex = entriesLength - 1;
     var entryIndex = 0;
     var entry = _entries.first;
