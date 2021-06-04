@@ -1,5 +1,9 @@
 ## 1.1.3
 
+- `ANN`:
+  - Added `toJson`, `toJsonMap` and `fromJson`.
+- `Layer`:
+  - Added `toJson`, `toJsonMap` and `fromJson`.
 - `ActivationFunction`:
   - Added `toJson`, `toJsonMap`, `fromJson` and `byName`.
 - `Scale`:
