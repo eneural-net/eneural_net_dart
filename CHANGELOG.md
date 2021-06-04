@@ -1,5 +1,8 @@
 ## 1.1.3
 
+- `Scale`:
+  - Added `format`.
+  - Added `toJson`, `toJsonMap` and `fromJson`.
 - `Signal`:
   - Added `format` and `fromFormat`.
   - Optimize `values` implementation for each format.

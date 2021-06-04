@@ -1,3 +1,7 @@
+import 'package:eneural_net/eneural_net.dart';
+import 'package:swiss_knife/swiss_knife.dart';
+
+/// A `Scale<int>`.
 class ScaleInt extends Scale<int> {
   static final ScaleInt ZERO_TO_ONE = ScaleInt(0, 1);
 
@@ -5,6 +9,9 @@ class ScaleInt extends Scale<int> {
   final int zero = 0;
 
   ScaleInt(int minValue, int maxValue) : super(minValue, maxValue);
+
+  @override
+  String get format => 'int';
 
   @override
   int toN(num value) => value.toInt();
@@ -24,6 +31,7 @@ class ScaleInt extends Scale<int> {
   }
 }
 
+/// A `Scale<double>`.
 class ScaleDouble extends Scale<double> {
   static final ScaleDouble ZERO_TO_ONE = ScaleDouble(0, 1);
 
@@ -31,6 +39,9 @@ class ScaleDouble extends Scale<double> {
   final double zero = 0;
 
   ScaleDouble(double minValue, double maxValue) : super(minValue, maxValue);
+
+  @override
+  String get format => 'double';
 
   @override
   double toN(num value) => value.toDouble();
@@ -51,6 +62,7 @@ class ScaleDouble extends Scale<double> {
   }
 }
 
+/// Base class for scales used for [ANN], [Signal] and [Sample].
 abstract class Scale<N extends num> {
   final N minValue;
 
@@ -65,25 +77,36 @@ abstract class Scale<N extends num> {
     range = toN((maxValue - minValue));
   }
 
+  /// The data format of this scale.
+  String get format;
+
+  /// The `zero` value for this scale format.
   N get zero;
 
+  /// Converts [value] to [N].
   N toN(num value);
 
+  /// Normalize [value] to this scale (in the range [0..1])
   N normalize(N value);
 
+  /// Normalize [value] to this scale (in the range [0..1])
   N normalizeNum(num value);
 
+  /// Denormalize [normalizedValue] to values of this scale (in the range [minValue] to [maxValue]).
   N denormalize(N normalizedValue);
 
+  /// Normalizes [values] using [normalize].
   List<N> normalizeList(List<N> values) =>
       values.map((e) => normalize(e)).toList();
 
+  /// Denormalizes [values] using [denormalize].
   List<N> denormalizeList(List<N> normalizedValues) =>
       normalizedValues.map((e) => denormalize(e)).toList();
 
   @override
   String toString();
 
+  /// Returns `true` if [other] is equals to `this`.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -94,6 +117,52 @@ abstract class Scale<N extends num> {
 
   @override
   int get hashCode => minValue.hashCode ^ maxValue.hashCode;
+
+  /// Converts to an encoded JSON.
+  String toJson({bool withIndent = false}) =>
+      encodeJSON(toJsonMap(), withIndent: withIndent);
+
+  /// Converts this Scale to a JSON [Map].
+  Map<String, dynamic> toJsonMap() => <String, dynamic>{
+        'format': format,
+        'min': minValue,
+        'max': maxValue,
+      };
+
+  /// Instantiates a [Scale] from [json].
+  factory Scale.fromJson(dynamic json) {
+    Map<String, dynamic> jsonMap = json is String ? parseJSON(json) : json;
+
+    var format = jsonMap['format']! as String;
+
+    var min = jsonMap['min']! as num;
+    var max = jsonMap['max']! as num;
+
+    switch (format) {
+      case 'double':
+        {
+          return ScaleDouble(min.toDouble(), max.toDouble()) as Scale<N>;
+        }
+      case 'int':
+        {
+          return ScaleInt(min.toInt(), max.toInt()) as Scale<N>;
+        }
+      case 'ZoomableDouble':
+        {
+          var zoom = jsonMap['zoom']! as num;
+          return ScaleZoomableDouble(
+              min.toDouble(), max.toDouble(), zoom.toDouble()) as Scale<N>;
+        }
+      case 'ScaleZoomableInt':
+        {
+          var zoom = jsonMap['zoom']! as num;
+          return ScaleZoomableInt(min.toInt(), max.toInt(), zoom.toInt())
+              as Scale<N>;
+        }
+      default:
+        throw StateError('Unknown format: $format');
+    }
+  }
 }
 
 class ScaleZoomableInt extends ScaleZoomable<int> {
@@ -106,6 +175,9 @@ class ScaleZoomableInt extends ScaleZoomable<int> {
       : super(minValue, maxValue, zoom) {
     rangeZoomed = range ~/ zoom;
   }
+
+  @override
+  String get format => 'ZoomableInt';
 
   @override
   int toN(num value) => value.toInt();
@@ -138,6 +210,9 @@ class ScaleZoomableDouble extends ScaleZoomable<double> {
   }
 
   @override
+  String get format => 'ZoomableDouble';
+
+  @override
   double toN(num value) => value.toDouble();
 
   @override
@@ -153,6 +228,13 @@ class ScaleZoomableDouble extends ScaleZoomable<double> {
   @override
   String toString() {
     return 'ScaleZoomableDouble{$minValue .. $maxValue * $zoom}';
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    var json = super.toJsonMap();
+    json['zoom'] = zoom;
+    return json;
   }
 }
 
