@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:swiss_knife/swiss_knife.dart';
+
 //import 'eneural_net_fastmath.dart' as fast_math;
 
 /// Scope of the activation function.
@@ -20,6 +22,42 @@ enum ActivationFunctionScope {
 
 /// Base class for Activation Functions.
 abstract class ActivationFunction<N extends num, E> {
+  static ActivationFunction<N, E> byName<N extends num, E>(
+    String name, {
+    double? initialWeightScale,
+    double? scale,
+  }) {
+    switch (name) {
+      case 'Linear':
+        return ActivationFunctionLinear(
+                initialWeightScale: initialWeightScale ?? 1.0)
+            as ActivationFunction<N, E>;
+      case 'Sigmoid':
+        return ActivationFunctionSigmoid(
+                initialWeightScale: initialWeightScale ?? 1.0)
+            as ActivationFunction<N, E>;
+      case 'SigmoidFast':
+        return ActivationFunctionSigmoidFast(
+                initialWeightScale: initialWeightScale ?? 1.0)
+            as ActivationFunction<N, E>;
+      case 'SigmoidBoundedFast':
+        return ActivationFunctionSigmoidBoundedFast(
+            initialWeightScale: initialWeightScale ?? 1.0,
+            scale: scale ?? 6.0) as ActivationFunction<N, E>;
+      default:
+        throw StateError('Unknown ActivationFunction with name: $name');
+    }
+  }
+
+  /// Decodes JSON.
+  static ActivationFunction<N, E> fromJson<N extends num, E>(dynamic json) {
+    Map<String, dynamic> jsonMap = json is String ? parseJSON(json) : json;
+
+    return byName(jsonMap['name'],
+        initialWeightScale: jsonMap['initialWeightScale'],
+        scale: jsonMap['scale']);
+  }
+
   static const double TOO_SMALL = -1.0E20;
   static const double TOO_BIG = 1.0E20;
 
@@ -69,6 +107,14 @@ abstract class ActivationFunction<N extends num, E> {
 
   @override
   String toString() => runtimeType.toString();
+
+  /// Converts to an encoded JSON.
+  String toJson({bool withIndent = false}) =>
+      encodeJSON(toJsonMap(), withIndent: withIndent);
+
+  /// Converts to a JSON [Map].
+  Map<String, dynamic> toJsonMap() =>
+      <String, dynamic>{'name': name, 'initialWeightScale': initialWeightScale};
 }
 
 /// Base class for SIMD optimized functions using [Float32x4].
@@ -367,6 +413,13 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
   Float32x4 derivativeEntryWithFlatSpot(Float32x4 entry) {
     return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry) +
         entryFlatSpot;
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    var json = super.toJsonMap();
+    json['scale'] = scale;
+    return json;
   }
 }
 

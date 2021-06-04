@@ -1,5 +1,7 @@
 ## 1.1.3
 
+- `ActivationFunction`:
+  - Added `toJson`, `toJsonMap`, `fromJson` and `byName`.
 - `Scale`:
   - Added `format`.
   - Added `toJson`, `toJsonMap` and `fromJson`.
