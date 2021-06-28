@@ -2,6 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/eneural_net.svg?logo=dart&logoColor=00b9fc)](https://pub.dev/packages/eneural_net)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Feneural-net%2Feneural_net_dart.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Feneural-net%2Feneural_net_dart?ref=badge_shield)
 
 [![CI](https://img.shields.io/github/workflow/status/eneural-net/eneural_net_dart/Dart%20CI/master?logo=github-actions&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/actions)
 [![GitHub Tag](https://img.shields.io/github/v/tag/eneural-net/eneural_net_dart?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/releases)
@@ -306,3 +307,6 @@ Graciliano M. Passos: [gmpassos@GitHub][github].
 [Apache License - Version 2.0][apache_license]
 
 [apache_license]: https://www.apache.org/licenses/LICENSE-2.0.txt
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Feneural-net%2Feneural_net_dart.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Feneural-net%2Feneural_net_dart?ref=badge_large)
