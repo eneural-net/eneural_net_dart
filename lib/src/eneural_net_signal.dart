@@ -3,13 +3,14 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:eneural_net/eneural_net.dart';
 import 'package:swiss_knife/swiss_knife.dart' show formatDecimal;
 
 import 'eneural_net_extension.dart';
 import 'eneural_net_scale.dart';
+import 'eneural_net_tools.dart';
 
 class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
+  // ignore: non_constant_identifier_names
   static final SignalInt32x4 EMPTY = SignalInt32x4(0);
 
   final Int32x4List _entries;
@@ -124,6 +125,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   @override
   String nToString(int n) => '$n';
 
+  // ignore: non_constant_identifier_names
   static final int ENTRY_BLOCK_SIZE = 4;
 
   @override
@@ -446,6 +448,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 }
 
 class SignalFloat32x4Mod4 extends SignalFloat32x4 {
+  // ignore: non_constant_identifier_names
   static final SignalFloat32x4Mod4 EMPTY = SignalFloat32x4Mod4(0);
 
   SignalFloat32x4Mod4(int size)
@@ -495,6 +498,7 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   SignalFloat32x4Mod4 createInstanceWithValues(List<double> values) =>
       createInstanceWithEntries(values.length, valuesToEntries(values));
 
+  // ignore: non_constant_identifier_names
   static final int ENTRY_BLOCK_SIZE = 4;
 
   @override
@@ -599,6 +603,7 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
 }
 
 class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
+  // ignore: non_constant_identifier_names
   static final SignalFloat32x4 EMPTY = SignalFloat32x4(0);
 
   final Float32x4List _entries;
@@ -640,6 +645,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   @override
   String nToString(double n) => formatDecimal(n, precision: 4) ?? '$n';
 
+  // ignore: non_constant_identifier_names
   static final int ENTRY_BLOCK_SIZE = 4;
 
   @override
@@ -1068,7 +1074,7 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   void operator []=(int valueIndex, N value) => setValue(valueIndex, value);
 
   @override
-  void add(N value) => throw UnsupportedError('Fixed-length list: $length');
+  void add(N element) => throw UnsupportedError('Fixed-length list: $length');
 
   int calcEntriesCapacityForSize(int size);
 
@@ -1325,15 +1331,19 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   List<E> createRandomEntries(int size, N randomScale, [Random? rand]) =>
       List.generate(size, (i) => createRandomEntry(randomScale, rand));
 
+  // ignore: non_constant_identifier_names
   String get _throwMessage_NoOpValues1 =>
       'No operation with 1 value! Entry block size: $entryBlockSize';
 
+  // ignore: non_constant_identifier_names
   String get _throwMessage_NoOpValues2 =>
       'No operation with 2 value! Entry block size: $entryBlockSize';
 
+  // ignore: non_constant_identifier_names
   String get _throwMessage_NoOpValues3 =>
       'No operation with 3 value! Entry block size: $entryBlockSize';
 
+  // ignore: non_constant_identifier_names
   String get _throwMessage_NoOpValues4 =>
       'No operation with 4 value! Entry block size: $entryBlockSize';
 

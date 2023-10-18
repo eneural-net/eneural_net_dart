@@ -2,8 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/eneural_net.svg?logo=dart&logoColor=00b9fc)](https://pub.dev/packages/eneural_net)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-
-[![CI](https://img.shields.io/github/workflow/status/eneural-net/eneural_net_dart/Dart%20CI/master?logo=github-actions&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/actions)
+[![Dart CI](https://github.com/eneural-net/eneural_net_dart/actions/workflows/dart.yml/badge.svg?branch=master)](https://github.com/eneural-net/eneural_net_dart/actions/workflows/dart.yml)
 [![GitHub Tag](https://img.shields.io/github/v/tag/eneural-net/eneural_net_dart?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/releases)
 [![New Commits](https://img.shields.io/github/commits-since/eneural-net/eneural_net_dart/latest?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/network)
 [![Last Commits](https://img.shields.io/github/last-commit/eneural-net/eneural_net_dart?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/commits/master)

@@ -58,7 +58,9 @@ abstract class ActivationFunction<N extends num, E> {
         scale: jsonMap['scale']);
   }
 
+  // ignore: constant_identifier_names
   static const double TOO_SMALL = -1.0E20;
+  // ignore: constant_identifier_names
   static const double TOO_BIG = 1.0E20;
 
   final String name;

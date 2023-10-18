@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   var scaleDouble = ScaleDouble.ZERO_TO_ONE;
-  var samplesXOR_Float32x4 = SampleFloat32x4.toListFromString([
+  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString([
     '0,0=0',
     '0,1=1',
     '1,0=1',
@@ -18,7 +18,7 @@ void main() {
     test('Backpropagation + ActivationFunctionSigmoid', () {
       var activationFunction = ActivationFunctionSigmoid();
 
-      var samplesSet = SamplesSet(samplesXOR_Float32x4, subject: 'xor');
+      var samplesSet = SamplesSet(samplesXorFloat32x4, subject: 'xor');
 
       var ann1 = ANN(
           scaleDouble,

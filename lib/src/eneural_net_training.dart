@@ -18,8 +18,8 @@ typedef TrainingLogger = void Function(
     [dynamic error, StackTrace? stackTrace]);
 
 /// The default [TrainingLogger].
-final TrainingLogger DefaultTrainingLogger =
-    (training, type, message, [error, stackTrace]) {
+void defaultTrainingLogger(Training training, String type, String message,
+    [dynamic error, StackTrace? stackTrace]) {
   var algorithmName = training.algorithmName;
 
   print('$algorithmName> [$type] $message');
@@ -31,7 +31,13 @@ final TrainingLogger DefaultTrainingLogger =
   if (stackTrace != null) {
     print(stackTrace);
   }
-};
+}
+
+@Deprecated("Use `defaultTrainingLogger`")
+// ignore: non_constant_identifier_names
+DefaultTrainingLogger(Training training, String type, String message,
+        [dynamic error, StackTrace? stackTrace]) =>
+    defaultTrainingLogger(training, type, message, error, stackTrace);
 
 /// Base class for training algorithms.
 abstract class Training<N extends num, E, T extends Signal<N, E, T>,
@@ -53,7 +59,7 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
   Training(this.ann, this.samplesSet, this.algorithmName,
       {String? subject, TrainingLogger? logger})
       : subject = samplesSet.subject,
-        logger = logger ?? DefaultTrainingLogger;
+        logger = logger ?? defaultTrainingLogger;
 
   /// If true logging will be enabled.
   bool logEnabled = true;

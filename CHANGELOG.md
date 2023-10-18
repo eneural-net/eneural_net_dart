@@ -1,3 +1,15 @@
+## 1.2.0
+
+- Optimize & update Dart CI.
+
+- sdk: '>=3.0.0 <4.0.0'
+- collection: ^1.17.2
+- swiss_knife: ^3.1.5
+- intl: ^0.18.1
+- lints: ^2.1.1
+- test: ^1.24.6
+- dependency_validator: ^3.2.3
+
 ## 1.1.3
 
 - `ANN`:
