@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   var scaleDouble = ScaleDouble.ZERO_TO_ONE;
-  var samplesXOR_Float32x4 = SampleFloat32x4.toListFromString([
+  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString([
     '0,0=0',
     '0,1=1',
     '1,0=1',
@@ -25,8 +25,8 @@ void main() {
           [HiddenLayerConfig(3, true)],
           LayerFloat32x4(1, false, activationFunction));
 
-      var training = Backpropagation(
-          ann, SamplesSet(samplesXOR_Float32x4, subject: 'xor'));
+      var training =
+          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
 
       _trainANN(ann, training);
     });
@@ -41,7 +41,7 @@ void main() {
           LayerFloat32x4(1, false, activationFunction));
 
       var training =
-          RProp(ann, SamplesSet(samplesXOR_Float32x4, subject: 'xor'));
+          RProp(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
 
       _trainANN(ann, training);
     });
@@ -55,8 +55,8 @@ void main() {
           [HiddenLayerConfig(3, true)],
           LayerFloat32x4(1, false, activationFunction));
 
-      var training = Backpropagation(
-          ann, SamplesSet(samplesXOR_Float32x4, subject: 'xor'));
+      var training =
+          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
 
       _trainANN(ann, training);
     });
@@ -70,8 +70,8 @@ void main() {
           [HiddenLayerConfig(3, true)],
           LayerFloat32x4(1, false, activationFunction));
 
-      var training = Backpropagation(
-          ann, SamplesSet(samplesXOR_Float32x4, subject: 'xor'));
+      var training =
+          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
 
       _trainANN(ann, training);
     });

@@ -177,6 +177,7 @@ int _expXToInt(double v) {
   }
 }
 
+// ignore: non_constant_identifier_names
 Float32x4 _float32x4__87 = Float32x4.splat(-87);
 Float32x4 _float32x4_87 = Float32x4.splat(87);
 Float32x4 _float32x4_1024 = Float32x4.splat(1024.0);
@@ -184,6 +185,7 @@ Float32x4 _float32x4_0_04168701738764507 = Float32x4.splat(0.04168701738764507);
 Float32x4 _float32x4_0_1666666505023083 = Float32x4.splat(0.1666666505023083);
 Float32x4 _float32x4_0_5000000000042687 = Float32x4.splat(0.5000000000042687);
 Float32x4 _float32x4_1_0 = Float32x4.splat(1.0);
+// ignore: non_constant_identifier_names
 Float32x4 _float32x4__3_940510424527919E_20 =
     Float32x4.splat(-3.940510424527919E-20);
 

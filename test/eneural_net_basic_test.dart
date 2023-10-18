@@ -276,7 +276,7 @@ void main() {
     });
 
     test('activationFunctionSigmoid[SIMD]', () {
-      var af = (double o) =>
+      af(double o) =>
           ActivationFunctionSigmoid().activateEntry(Float32x4.splat(o)).x;
 
       showFunction('activationFunctionSigmoid[SIMD]', (n) => af(n.toDouble()),

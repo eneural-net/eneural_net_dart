@@ -162,10 +162,10 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
   late E _learningRateEntry;
 
   @override
-  void setValue(double learningRate) {
-    if (_learningRate != learningRate) {
-      _learningRate = learningRate;
-      _learningRateEntry = createValueEntry(learningRate);
+  void setValue(double value) {
+    if (_learningRate != value) {
+      _learningRate = value;
+      _learningRateEntry = createValueEntry(value);
     }
   }
 
@@ -251,10 +251,10 @@ class MomentumRateStrategy<N extends num, E, T extends Signal<N, E, T>>
   E get valueEntry => _momentumEntry;
 
   @override
-  void setValue(double momentum) {
-    if (_momentum != momentum) {
-      _momentum = momentum;
-      _momentumEntry = createValueEntry(momentum);
+  void setValue(double value) {
+    if (_momentum != value) {
+      _momentum = value;
+      _momentumEntry = createValueEntry(value);
     }
   }
 

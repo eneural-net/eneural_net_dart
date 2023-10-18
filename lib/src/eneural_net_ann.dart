@@ -393,14 +393,11 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
               format,
               size: neuronsSize) as SignalFloat32x4;
 
-          var weights = weightsValues == null
-              ? null
-              : weightsValues
-                  .map((e) =>
-                      Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
-                          format,
-                          values: e.asDoubles()) as SignalFloat32x4)
-                  .toList();
+          var weights = weightsValues
+              ?.map((e) =>
+                  Signal.fromFormat<double, Float32x4, SignalFloat32x4>(format,
+                      values: e.asDoubles()) as SignalFloat32x4)
+              .toList();
 
           var af = activationFunction as ActivationFunction<double, Float32x4>;
 
@@ -413,13 +410,11 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           var neurons = Signal.fromFormat<int, Int32x4, SignalInt32x4>(format,
               size: neuronsSize) as SignalInt32x4;
 
-          var weights = weightsValues == null
-              ? null
-              : weightsValues
-                  .map((e) => Signal.fromFormat<int, Int32x4, SignalInt32x4>(
-                      format,
-                      values: e.asInts()) as SignalInt32x4)
-                  .toList();
+          var weights = weightsValues
+              ?.map((e) => Signal.fromFormat<int, Int32x4, SignalInt32x4>(
+                  format,
+                  values: e.asInts()) as SignalInt32x4)
+              .toList();
 
           var af = activationFunction as ActivationFunction<int, Int32x4>;
 
@@ -432,14 +427,11 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
               format,
               size: neuronsSize) as SignalFloat32x4Mod4;
 
-          var weights = weightsValues == null
-              ? null
-              : weightsValues
-                  .map((e) =>
-                      Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
-                          format,
-                          values: e.asDoubles()) as SignalFloat32x4Mod4)
-                  .toList();
+          var weights = weightsValues
+              ?.map((e) =>
+                  Signal.fromFormat<double, Float32x4, SignalFloat32x4>(format,
+                      values: e.asDoubles()) as SignalFloat32x4Mod4)
+              .toList();
 
           var af = activationFunction as ActivationFunction<double, Float32x4>;
 

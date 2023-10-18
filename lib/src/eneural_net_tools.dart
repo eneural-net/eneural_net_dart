@@ -345,9 +345,9 @@ extension DataEntryExtension<E extends DataEntry> on List<E> {
   }
 }
 
-final _REGEXP_NEW_LINE = RegExp(r'[\r\n]');
+final _regExpNewLine = RegExp(r'[\r\n]');
 
-String _normalizeLine(String e) => e.replaceAll(_REGEXP_NEW_LINE, ' ');
+String _normalizeLine(String e) => e.replaceAll(_regExpNewLine, ' ');
 
 extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
   N _toN(num n) => (N == int ? n.toInt() : n.toDouble()) as N;

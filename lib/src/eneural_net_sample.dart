@@ -1,13 +1,15 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:eneural_net/eneural_net.dart';
+//import 'package:eneural_net/eneural_net.dart';
 
 import 'eneural_net_extension.dart';
 import 'eneural_net_scale.dart';
 import 'eneural_net_signal.dart';
+import 'eneural_net_tools.dart';
 
 class SampleInt32x4 extends Sample<int, Int32x4, SignalInt32x4, Scale<int>> {
+  // ignore: non_constant_identifier_names
   static final SampleInt32x4 DUMMY = SampleInt32x4.normalized(
       SignalInt32x4.from([0]), SignalInt32x4.from([0]), ScaleInt.ZERO_TO_ONE);
 
@@ -66,6 +68,7 @@ class SampleInt32x4 extends Sample<int, Int32x4, SignalInt32x4, Scale<int>> {
 /// [ANN] sample based in [Float32x4] data.
 class SampleFloat32x4
     extends Sample<double, Float32x4, SignalFloat32x4, Scale<double>> {
+  // ignore: non_constant_identifier_names
   static final SampleFloat32x4 DUMMY = SampleFloat32x4.normalized(
       SignalFloat32x4.from([0]),
       SignalFloat32x4.from([0]),
@@ -126,8 +129,9 @@ class SampleFloat32x4
 /// Base class for [ANN] samples.
 abstract class Sample<N extends num, E, T extends Signal<N, E, T>,
     S extends Scale<N>> {
+  // ignore: non_constant_identifier_names
   static final RegExp REGEXP_IN_OUT_DELIMITER = RegExp(r'\s*=\s*');
-
+// ignore: non_constant_identifier_names
   static final RegExp REGEXP_VALUE_DELIMITER = RegExp(r'\s*[,;]\s*');
 
   /// Input values.

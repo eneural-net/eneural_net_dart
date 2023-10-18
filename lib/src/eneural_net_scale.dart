@@ -3,6 +3,7 @@ import 'package:swiss_knife/swiss_knife.dart';
 
 /// A `Scale<int>`.
 class ScaleInt extends Scale<int> {
+  // ignore: non_constant_identifier_names
   static final ScaleInt ZERO_TO_ONE = ScaleInt(0, 1);
 
   @override
@@ -33,6 +34,7 @@ class ScaleInt extends Scale<int> {
 
 /// A `Scale<double>`.
 class ScaleDouble extends Scale<double> {
+  // ignore: non_constant_identifier_names
   static final ScaleDouble ZERO_TO_ONE = ScaleDouble(0, 1);
 
   @override
