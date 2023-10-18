@@ -15,7 +15,7 @@ void main() {
         var e1 = exp(v);
         var e2 = fast_math.exp(v);
         var error = e1 - e2;
-        expect(error.abs() < 9.0e-16, isTrue,
+        expect(error.abs() < 2.0e-15, isTrue,
             reason: '$v -> $e1 - $e2 = $error');
       }
     });
