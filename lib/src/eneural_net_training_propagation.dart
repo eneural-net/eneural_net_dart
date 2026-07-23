@@ -292,8 +292,17 @@ abstract class Propagation<
     var nextEntriesLength = nextNeurons.valuesEntriesLength;
     var nextEntriesLastIndex = nextEntriesLength - 1;
 
+    // The bias neuron (last neuron when the layer has one) propagates a
+    // constant `1` in the forward pass (see `LayerInput`/`LayerHidden`
+    // `activateLayer`), so its output in the gradient must also be `1` — not
+    // the value stored in its neuron slot (which is `0` for the input layer
+    // and `f(net)` for hidden layers).
+    var biasNeuronIndex = layer.withBiasNeuron ? length - 1 : -1;
+
     for (var neuronI = 0; neuronI < length; ++neuronI) {
-      var neuronOutput = neurons.getValue(neuronI);
+      var neuronOutput = neuronI == biasNeuronIndex
+          ? neurons.one
+          : neurons.getValue(neuronI);
       var neuronOutputEntry = neurons.createEntryFullOf(neuronOutput);
 
       var neuronWeights = weights[neuronI];

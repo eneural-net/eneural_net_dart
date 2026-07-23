@@ -169,14 +169,14 @@ void main() {
 
   group('Integration: topologies', () {
     test('two hidden layers learn XOR', () {
-      var ann = buildANN(2, [4, 3], 1);
+      var ann = buildANN(2, [4, 3], 1, seed: 42);
       var training = RProp(
         ann,
         SamplesSet(samplesFromStrings(xor), subject: 'xor-deep'),
       );
 
       expect(ann.allLayers.length, equals(4));
-      trainAndAssert(ann, training, targetGlobalError: 0.03);
+      trainAndAssert(ann, training, targetGlobalError: 0.02, seed: 42);
     });
 
     test('multiple outputs are learned independently', () {
