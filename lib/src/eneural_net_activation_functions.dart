@@ -26,6 +26,7 @@ abstract class ActivationFunction<N extends num, E> {
     String name, {
     double? initialWeightScale,
     double? scale,
+    int? scaleMax,
   }) {
     switch (name) {
       case 'Linear':
@@ -49,6 +50,15 @@ abstract class ActivationFunction<N extends num, E> {
               scale: scale ?? 6.0,
             )
             as ActivationFunction<N, E>;
+      case 'SigmoidFastInt100':
+        return ActivationFunctionSigmoidFastInt100(initialWeightScale ?? 10.0)
+            as ActivationFunction<N, E>;
+      case 'SigmoidFastInt':
+        return ActivationFunctionSigmoidFastInt(
+              scaleMax ?? 100,
+              initialWeightScale ?? 10.0,
+            )
+            as ActivationFunction<N, E>;
       default:
         throw StateError('Unknown ActivationFunction with name: $name');
     }
@@ -60,8 +70,9 @@ abstract class ActivationFunction<N extends num, E> {
 
     return byName(
       jsonMap['name'],
-      initialWeightScale: jsonMap['initialWeightScale'],
-      scale: jsonMap['scale'],
+      initialWeightScale: (jsonMap['initialWeightScale'] as num?)?.toDouble(),
+      scale: (jsonMap['scale'] as num?)?.toDouble(),
+      scaleMax: (jsonMap['scaleMax'] as num?)?.toInt(),
     );
   }
 
@@ -93,7 +104,10 @@ abstract class ActivationFunction<N extends num, E> {
 
   /// Generates a [List] of random weights compatible with this activation function.
   List<double> createRandomWeights(Random random, int length, {double? scale}) {
-    return List.generate(length, (index) => createRandomWeight(random));
+    return List.generate(
+      length,
+      (index) => createRandomWeight(random, scale: scale),
+    );
   }
 
   /// The activation function.
@@ -349,6 +363,11 @@ class ActivationFunctionSigmoidFast extends ActivationFunctionFloat32x4 {
   }
 
   @override
+  double derivativeWithFlatSpot(double o) {
+    return o * (1.0 - o) + flatSpot;
+  }
+
+  @override
   Float32x4 derivativeEntry(Float32x4 entry) {
     return entry * (ActivationFunctionFloat32x4.entryOfOnes - entry);
     /*
@@ -380,6 +399,8 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
 
   final double scale;
 
+  final Float32x4 _entryScale;
+
   ActivationFunctionSigmoidBoundedFast({
     this.scale = 6,
     double initialWeightScale = 2,
@@ -387,6 +408,7 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
        _entryLowerLimit = Float32x4.splat(-scale),
        upperLimit = scale,
        _entryUpperLimit = Float32x4.splat(scale),
+       _entryScale = Float32x4.splat(scale),
        super('SigmoidBoundedFast', initialWeightScale);
 
   @override
@@ -399,14 +421,15 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
     return 0.5 + (x / (1 + (x * x)));
   }
 
+  /// The SIMD version of [activate]:
+  /// `0.5 + (x / (1 + x²))`, with `x` clamped to
+  /// [lowerLimit]..[upperLimit] and divided by [scale].
   @override
   Float32x4 activateEntry(Float32x4 entry) {
     entry = entry.clamp(_entryLowerLimit, _entryUpperLimit);
-    entry = entry * ActivationFunctionFloat32x4.entryOfThrees;
+    entry = entry / _entryScale;
     return ActivationFunctionFloat32x4.entryOfHalf +
-        ((entry) /
-            (ActivationFunctionFloat32x4.entryOfTwosAndHalf + entry.abs()) /
-            ActivationFunctionFloat32x4.entryOfTwos);
+        (entry / (ActivationFunctionFloat32x4.entryOfOnes + (entry * entry)));
     /*
     return Float32x4(
       activate(entry.x),
@@ -420,6 +443,11 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
   @override
   double derivative(double o) {
     return o * (1.0 - o);
+  }
+
+  @override
+  double derivativeWithFlatSpot(double o) {
+    return o * (1.0 - o) + flatSpot;
   }
 
   @override
@@ -527,10 +555,17 @@ class ActivationFunctionSigmoidFastInt
   @override
   Int32x4 derivativeEntry(Int32x4 entry) {
     return Int32x4(
-      entry.x * (100 - entry.x),
-      entry.y * (100 - entry.y),
-      entry.z * (100 - entry.z),
-      entry.w * (100 - entry.w),
+      entry.x * (scaleMax - entry.x),
+      entry.y * (scaleMax - entry.y),
+      entry.z * (scaleMax - entry.z),
+      entry.w * (scaleMax - entry.w),
     );
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    var json = super.toJsonMap();
+    json['scaleMax'] = scaleMax;
+    return json;
   }
 }

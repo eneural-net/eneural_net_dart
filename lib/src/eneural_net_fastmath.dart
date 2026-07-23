@@ -113,6 +113,10 @@ double cosh(double x) {
 ///
 /// NOTE: For higher precision use [expHighPrecision].
 double exp(double x) {
+  if (x != x) return double.nan;
+  if (x == double.infinity) return double.infinity;
+  if (x == double.negativeInfinity) return 0.0;
+
   x = x.clamp(-87, 87);
 
   var xInt = _expXToInt(x);
@@ -317,6 +321,18 @@ double expHighPrecision(
   double intPartB;
   int intVal;
 
+  if (x != x || x.isInfinite) {
+    // `exp(NaN) = NaN`, `exp(+inf) = +inf` and `exp(-inf) = 0`:
+    var result = x != x ? double.nan : (x > 0 ? double.infinity : 0.0);
+
+    if (highPrecision != null) {
+      highPrecision[0] = result;
+      highPrecision[1] = 0.0;
+    }
+
+    return result;
+  }
+
   // Lookup exp(floor(x)).
   // intPartA will have the upper 22 bits, intPartB will have the lower
   // 52 bits.
@@ -362,14 +378,7 @@ double expHighPrecision(
 
     intVal = -intVal;
   } else {
-    if (x == double.infinity) {
-      if (highPrecision != null) {
-        highPrecision[0] = double.infinity;
-        highPrecision[1] = 0.0;
-      }
-      return double.infinity;
-    }
-
+    // NOTE: `x` is finite here, the infinities are handled at the top.
     intVal = x.toInt();
 
     if (intVal > 709) {
@@ -570,6 +579,8 @@ double sinh(double x) {
 /// [leftPlane] if true, result angle must be put in the left half plane.
 /// Returns `atan(xa + xb)` (or angle shifted by `PI` if leftPlane is true)
 double atan(double xa, [double xb = 0.0, bool leftPlane = false]) {
+  if (xa != xa) return double.nan;
+
   if (xa == 0.0) {
     // Matches +/- 0.0; return correct sign
     return leftPlane ? copySign(dart_math.pi, xa) : xa;
@@ -728,6 +739,14 @@ double expm1(double x, List<double> hiPrecOut) {
     return x;
   }
 
+  if (x.isInfinite) {
+    // `exp(+inf) - 1 = +inf` and `exp(-inf) - 1 = -1`:
+    var result = x > 0 ? double.infinity : -1.0;
+    hiPrecOut[0] = result;
+    hiPrecOut[1] = 0.0;
+    return result;
+  }
+
   if (x <= -1.0 || x >= 1.0) {
     // If not between +/- 1.0
     //return exp(x) - 1.0;
@@ -857,11 +876,10 @@ double expm1(double x, List<double> hiPrecOut) {
     yb = -rb;
   }
 
-  // TODO(@kranfix): remove?
-  //if (hiPrecOut != null) {
-  //  hiPrecOut[0] = ya;
-  //  hiPrecOut[1] = yb;
-  //}
+  // The high precision parts of the result. Callers (like `sinh`) rely on
+  // them being set:
+  hiPrecOut[0] = ya;
+  hiPrecOut[1] = yb;
 
   return ya + yb;
 }
@@ -1004,8 +1022,11 @@ double copySign(double magnitude, double sign) {
       return magnitude;
   }
   return -magnitude; // flip sign*/
-  if (sign == 0.0 || sign.isNaN || magnitude.sign == sign.sign) {
+  if (sign.isNaN) {
     return magnitude;
   }
-  return -magnitude; // flip sign
+
+  // NOTE: `sign == 0.0` is also true for `-0.0`, so the sign bit needs to be
+  // read with `isNegative`, otherwise `copySign(x, -0.0)` returns `+x`.
+  return sign.isNegative ? -magnitude.abs() : magnitude.abs();
 }

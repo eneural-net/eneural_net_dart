@@ -102,6 +102,7 @@ class Chronometer implements Comparable<Chronometer> {
     _startTime = null;
     _stopTime = null;
     operations = 0;
+    failedOperations = 0;
   }
 
   /// Returns a [String] with information of this chronometer:
@@ -173,14 +174,56 @@ class DataStatistics<N extends num> extends DataEntry {
     this.upperStatistics,
   }) : length = length.toDouble(),
        sum = sum ?? (mean! * length),
-       squaresSum =
-           squaresSum ?? ((standardDeviation! * standardDeviation) * length),
        mean = mean ?? (sum! / length),
-       standardDeviation = standardDeviation ?? math.sqrt(squaresSum! / length);
+       squaresSum =
+           squaresSum ??
+           computeSquaresSum(
+             standardDeviation!,
+             mean ?? (sum! / length),
+             length.toDouble(),
+           ),
+       standardDeviation =
+           standardDeviation ??
+           computeStandardDeviation(
+             squaresSum!,
+             mean ?? (sum! / length),
+             length.toDouble(),
+           );
+
+  /// Computes the population standard deviation from the [squaresSum],
+  /// the [mean] and the [length] of a series:
+  /// `sqrt( (squaresSum / length) - mean² )`.
+  static double computeStandardDeviation(
+    num squaresSum,
+    double mean,
+    double length,
+  ) {
+    if (length <= 0) return 0.0;
+    var variance = (squaresSum / length) - (mean * mean);
+    // Guards against a negative variance caused by floating point errors:
+    return variance <= 0 ? 0.0 : math.sqrt(variance);
+  }
+
+  /// The inverse of [computeStandardDeviation]:
+  /// `(standardDeviation² + mean²) * length`.
+  static num computeSquaresSum(
+    double standardDeviation,
+    double mean,
+    double length,
+  ) => ((standardDeviation * standardDeviation) + (mean * mean)) * length;
 
   factory DataStatistics._empty(List<N> list) {
     var zero = list.castElement(0);
-    return DataStatistics(0, zero, zero, zero, sum: zero, squaresSum: zero);
+    return DataStatistics(
+      0,
+      zero,
+      zero,
+      zero,
+      sum: zero,
+      squaresSum: zero,
+      mean: 0,
+      standardDeviation: 0,
+    );
   }
 
   factory DataStatistics._single(N n) {
@@ -225,7 +268,11 @@ class DataStatistics<N extends num> extends DataEntry {
 
     var mean = sum / length;
 
-    var standardDeviation = math.sqrt(squaresSum / length);
+    var standardDeviation = computeStandardDeviation(
+      squaresSum,
+      mean,
+      length.toDouble(),
+    );
 
     DataStatistics? lowerStatistics;
     DataStatistics? upperStatistics;
@@ -279,7 +326,7 @@ class DataStatistics<N extends num> extends DataEntry {
             standardDeviation <= maxDeviation);
   }
 
-  double get squaresMean => squaresSum / length;
+  double get squaresMean => length == 0 ? 0.0 : squaresSum / length;
 
   @override
   String toString({int precision = 4}) {
@@ -322,17 +369,20 @@ class DataStatistics<N extends num> extends DataEntry {
   }
 
   DataStatistics<double> operator +(DataStatistics other) {
+    var length = this.length + other.length;
+    var sum = this.sum + other.sum;
+    var squaresSum = this.squaresSum + other.squaresSum;
+    var mean = length == 0 ? 0.0 : sum / length;
+
     return DataStatistics(
-      length + other.length,
+      length,
       math.min(min.toDouble(), other.min.toDouble()),
       math.max(max.toDouble(), other.max.toDouble()),
       (center + other.center) / 2,
-      sum: sum + other.sum,
-      squaresSum: squaresSum + other.squaresSum,
-      mean: (sum + other.sum) / (length + other.length),
-      standardDeviation: math.sqrt(
-        (squaresSum + other.squaresSum) / (length + other.length),
-      ),
+      sum: sum,
+      squaresSum: squaresSum,
+      mean: mean,
+      standardDeviation: computeStandardDeviation(squaresSum, mean, length),
     );
   }
 

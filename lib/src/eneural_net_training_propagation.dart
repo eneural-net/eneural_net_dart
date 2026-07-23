@@ -287,7 +287,9 @@ abstract class Propagation<
 
     var nextNeurons = nextLayer.neurons;
     var nextGradientsDeltas = _layersGradientsDeltas[layerIndex + 1];
-    var nextEntriesLength = nextNeurons.entriesLength;
+    // Only the entries that hold values: the chunk padding entries
+    // (see `Signal.valuesEntriesLength`) don't map to any neuron.
+    var nextEntriesLength = nextNeurons.valuesEntriesLength;
     var nextEntriesLastIndex = nextEntriesLength - 1;
 
     for (var neuronI = 0; neuronI < length; ++neuronI) {
@@ -351,7 +353,7 @@ abstract class Propagation<
 
     var gradientsDelta = _layersGradientsDeltas[layerIndex]; // layer.deltas;
 
-    for (var i = neurons.entriesLength - 1; i >= 0; --i) {
+    for (var i = neurons.valuesEntriesLength - 1; i >= 0; --i) {
       var neuronsEntry = neurons.getEntry(i);
       var expectedEntry = expected.getEntry(i);
       var error = expected.entryOperationSubtract(expectedEntry, neuronsEntry);
@@ -380,7 +382,7 @@ abstract class Propagation<
 
     var weightsLastUpdates = _layersWeightsLastUpdates[layerIndex];
 
-    var nextEntriesLength = nextLayer.neurons.entriesLength;
+    var nextEntriesLength = nextLayer.neurons.valuesEntriesLength;
 
     var previousUpdateDeltas = _layersPreviousUpdateDelta[layerIndex];
     var noImprovementCounter = _layersNoImprovementCounter[layerIndex];

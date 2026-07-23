@@ -36,8 +36,12 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   factory SignalInt32x4.from(List<int> values) =>
       EMPTY.createInstanceWithValues(values);
 
-  factory SignalInt32x4.fromEntries(List<Int32x4> entries, int size) =>
-      SignalInt32x4._(Int32x4List.fromList(entries), size);
+  factory SignalInt32x4.fromEntries(List<Int32x4> entries, int size) {
+    // Keeps the entries length a multiple of 4 without mutating [entries]:
+    var list = List<Int32x4>.from(entries);
+    EMPTY.ensureEntriesLengthMod(list);
+    return SignalInt32x4._(Int32x4List.fromList(list), size);
+  }
 
   @override
   String get format => 'Int32x4';
@@ -120,7 +124,13 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   }
 
   @override
-  void ensureEntriesLengthMod(List<Int32x4> entries) {}
+  void ensureEntriesLengthMod(List<Int32x4> entries) {
+    // The `Int32x4` operations are unrolled in chunks of 4 entries,
+    // so the entries length needs to be a multiple of 4:
+    while (entries.length % 4 != 0) {
+      entries.add(entryEmpty);
+    }
+  }
 
   @override
   int toN(num n) => n.toInt();
@@ -335,7 +345,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   SignalInt32x4 multiply(SignalInt32x4 other) {
-    var destiny = SignalInt32x4(capacity);
+    var destiny = createInstance(length);
     multiplyTo(other, destiny);
     return destiny;
   }
@@ -362,7 +372,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   SignalInt32x4 subtract(SignalInt32x4 other) {
-    var destiny = SignalInt32x4(capacity);
+    var destiny = createInstance(length);
     subtractTo(other, destiny);
     return destiny;
   }
@@ -426,7 +436,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   SignalInt32x4 multiplyEntries(Int32x4 entry) {
-    var destiny = SignalInt32x4(capacity);
+    var destiny = createInstance(length);
     multiplyAllEntriesTo(entry, destiny);
     return destiny;
   }
@@ -452,7 +462,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
           _entriesEquality.equals(_entries, other._entries);
 
   @override
-  int get hashCode => _entries.hashCode ^ _size.hashCode;
+  int get hashCode => _entriesEquality.hash(_entries) ^ _size.hashCode;
 }
 
 class SignalFloat32x4Mod4 extends SignalFloat32x4 {
@@ -471,11 +481,18 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   factory SignalFloat32x4Mod4.from(List<double> values) =>
       EMPTY.createInstanceWithValues(values);
 
-  factory SignalFloat32x4Mod4.fromEntries(List<Float32x4> entries, int size) =>
-      SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
+  factory SignalFloat32x4Mod4.fromEntries(List<Float32x4> entries, int size) {
+    // Keeps the entries length a multiple of 4 without mutating [entries]:
+    var list = List<Float32x4>.from(entries);
+    EMPTY.ensureEntriesLengthMod(list);
+    return SignalFloat32x4Mod4._(Float32x4List.fromList(list), size);
+  }
 
   @override
   String get format => 'Float32x4Mod4';
+
+  @override
+  int calcEntriesCapacityForSize(int size) => calcEntriesCapacity(size);
 
   @override
   SignalFloat32x4Mod4 createInstance(int size) => SignalFloat32x4Mod4(size);
@@ -510,6 +527,10 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   @override
   SignalFloat32x4Mod4 createInstanceWithValues(List<double> values) =>
       createInstanceWithEntries(values.length, valuesToEntries(values));
+
+  @override
+  SignalFloat32x4Mod4 copy() =>
+      SignalFloat32x4Mod4._(Float32x4List.fromList(_entries), _size);
 
   // ignore: non_constant_identifier_names
   static final int ENTRY_BLOCK_SIZE = 4;
@@ -953,7 +974,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   SignalFloat32x4 multiply(SignalFloat32x4 other) {
-    var destiny = SignalFloat32x4(capacity);
+    var destiny = createInstance(length);
     multiplyTo(other, destiny);
     return destiny;
   }
@@ -971,7 +992,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   SignalFloat32x4 subtract(SignalFloat32x4 other) {
-    var destiny = SignalFloat32x4(capacity);
+    var destiny = createInstance(length);
     subtractTo(other, destiny);
     return destiny;
   }
@@ -1008,7 +1029,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   SignalFloat32x4 multiplyEntries(Float32x4 entry) {
-    var destiny = SignalFloat32x4(capacity);
+    var destiny = createInstance(length);
     multiplyAllEntriesTo(entry, destiny);
     return destiny;
   }
@@ -1034,7 +1055,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
           _entriesEquality.equals(_entries, other._entries);
 
   @override
-  int get hashCode => _entries.hashCode ^ _size.hashCode;
+  int get hashCode => _entriesEquality.hash(_entries) ^ _size.hashCode;
 }
 
 abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
@@ -1147,10 +1168,23 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   /// Returns all entries.
   List<E> get entries;
 
-  /// Returns the length of the last entry.
+  /// Returns the number of entries that actually hold [values].
+  ///
+  /// Can be lower than [entriesLength], since some implementations
+  /// (like [SignalInt32x4] and [SignalFloat32x4Mod4]) allocate the entries
+  /// in chunks, leaving fully unused entries at the tail.
+  int get valuesEntriesLength =>
+      Signal.calcNeededBlocks(length, entryBlockSize);
+
+  /// Returns the length of the last entry that holds [values]
+  /// (the entry at index `[valuesEntriesLength] - 1`).
+  ///
+  /// It's in the range `1 .. [entryBlockSize]`, or `0` if this signal is empty.
   int get lastEntryLength {
     var length = this.length;
-    return length == 0 ? 0 : length - (capacity - entryBlockSize);
+    if (length == 0) return 0;
+    var lastEntryLength = length % entryBlockSize;
+    return lastEntryLength == 0 ? entryBlockSize : lastEntryLength;
   }
 
   /// Returns entry at [index].
@@ -1437,41 +1471,58 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
   void setExtraValues(N value) {
     var length = this.length;
     var capacity = this.capacity;
-    var extraSize = capacity - length;
 
-    if (extraSize == 0) return;
+    if (capacity <= length) return;
 
-    if (entryBlockSize == 4) {
-      var lastEntryIndex = entriesLength - 1;
-      var lastEntry = getEntry(lastEntryIndex);
+    var entryBlockSize = this.entryBlockSize;
+    var valuesEntriesLength = this.valuesEntriesLength;
 
-      E entry;
+    // Set the unused values of the last entry that holds values:
+    if (valuesEntriesLength > 0) {
+      var lastEntryIndex = valuesEntriesLength - 1;
+      var lastEntryCapacity = valuesEntriesLength * entryBlockSize;
+      var extraSize = lastEntryCapacity - length;
 
-      switch (extraSize) {
-        case 1:
-          {
-            entry = createEntryFrom(lastEntry, null, null, null, value);
-            break;
+      if (extraSize > 0) {
+        if (entryBlockSize == 4) {
+          var lastEntry = getEntry(lastEntryIndex);
+
+          E entry;
+
+          switch (extraSize) {
+            case 1:
+              {
+                entry = createEntryFrom(lastEntry, null, null, null, value);
+                break;
+              }
+            case 2:
+              {
+                entry = createEntryFrom(lastEntry, null, null, value, value);
+                break;
+              }
+            case 3:
+              {
+                entry = createEntryFrom(lastEntry, null, value, value, value);
+                break;
+              }
+            default:
+              throw StateError(
+                'Unreachable state: $extraSize / $entryBlockSize',
+              );
           }
-        case 2:
-          {
-            entry = createEntryFrom(lastEntry, null, null, value, value);
-            break;
+
+          setEntry(lastEntryIndex, entry);
+        } else {
+          for (var i = length; i < lastEntryCapacity; ++i) {
+            setValue(i, value);
           }
-        case 3:
-          {
-            entry = createEntryFrom(lastEntry, null, value, value, value);
-            break;
-          }
-        default:
-          throw StateError('Unreachable state: $extraSize / $entryBlockSize');
+        }
       }
+    }
 
-      setEntry(lastEntryIndex, entry);
-    } else {
-      for (var i = length; i < capacity; ++i) {
-        setValue(i, value);
-      }
+    // Set the entries not used by any value (chunk padding):
+    for (var i = valuesEntriesLength; i < entriesLength; ++i) {
+      setEntryWithValue(i, value);
     }
   }
 
@@ -1612,7 +1663,7 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     var length = this.length;
     if (length == 0) return toN(zero);
 
-    var entriesLength = this.entriesLength;
+    var entriesLength = valuesEntriesLength;
 
     num total;
     {

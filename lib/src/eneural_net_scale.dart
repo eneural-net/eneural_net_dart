@@ -159,7 +159,9 @@ abstract class Scale<N extends num> {
               )
               as Scale<N>;
         }
-      case 'ScaleZoomableInt':
+      // ignore: no_duplicate_case_values
+      case 'ZoomableInt':
+      case 'ScaleZoomableInt': // Legacy/never emitted format name.
         {
           var zoom = jsonMap['zoom']! as num;
           return ScaleZoomableInt(min.toInt(), max.toInt(), zoom.toInt())
@@ -201,6 +203,13 @@ class ScaleZoomableInt extends ScaleZoomable<int> {
   @override
   String toString() {
     return 'ScaleZoomableInt{$minValue .. $maxValue * $zoom}';
+  }
+
+  @override
+  Map<String, dynamic> toJsonMap() {
+    var json = super.toJsonMap();
+    json['zoom'] = zoom;
+    return json;
   }
 }
 

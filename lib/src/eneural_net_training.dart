@@ -88,7 +88,7 @@ abstract class Training<
     this.algorithmName, {
     String? subject,
     TrainingLogger? logger,
-  }) : subject = samplesSet.subject,
+  }) : subject = subject ?? samplesSet.subject,
        logger = logger ?? defaultTrainingLogger;
 
   /// If true logging will be enabled.
@@ -125,6 +125,19 @@ abstract class Training<
   List<N>? _bestTrainingWeights;
 
   double _bestTrainingError = double.maxFinite;
+
+  /// The lowest training error seen by [checkBestTrainingError] since the
+  /// last [resetBestTraining].
+  double get bestTrainingError => _bestTrainingError;
+
+  /// Discards the best weights/error tracked by [checkBestTrainingError].
+  ///
+  /// Called by [trainUntilGlobalError] when a new training session starts,
+  /// so that a session is never anchored to a previous session's best.
+  void resetBestTraining() {
+    _bestTrainingWeights = null;
+    _bestTrainingError = double.maxFinite;
+  }
 
   /// Reset this instance for a future training sessions.
   void reset() {
@@ -203,6 +216,10 @@ abstract class Training<
     }
 
     _setStartTime();
+
+    // A new training session doesn't inherit the best weights of a
+    // previous one:
+    resetBestTraining();
 
     logInfo(
       'Started $algorithmName training session "$subject". { samples: ${samples.length} ; targetGlobalError: $targetGlobalError }',

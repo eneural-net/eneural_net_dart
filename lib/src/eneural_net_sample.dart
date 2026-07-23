@@ -241,7 +241,7 @@ abstract class Sample<
 
   DataStatistics proximityStatistics<P extends Sample<N, E, T, S>>(P other) {
     var input = inputProximityStatistics(other);
-    var output = inputProximityStatistics(other);
+    var output = outputProximityStatistics(other);
     return DataStatistics(
       input.length,
       math.min(input.min, output.min),
@@ -383,7 +383,7 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
     tolerance ??= inputTolerance;
     samples ??= this.samples;
 
-    var length = this.length;
+    var length = samples.length;
 
     var groups = <Set<P>>[];
     var samplesGroups = <P, int>{};

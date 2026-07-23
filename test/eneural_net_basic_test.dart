@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:eneural_net/eneural_net.dart';
@@ -180,7 +179,7 @@ void main() {
         expect(
           SignalInt32x4.from(values),
           predicate<SignalInt32x4>(
-            (s) => equalsSignal(s, 4, values.length, values),
+            (s) => equalsSignal(s, 4, values.length, values, entriesChunk: 4),
           ),
         );
       }
@@ -193,6 +192,18 @@ void main() {
           SignalFloat32x4.from(values),
           predicate<SignalFloat32x4>(
             (s) => equalsSignal(s, 4, values.length, values),
+          ),
+        );
+      }
+    });
+
+    test('SignalFloat32x4Mod4', () {
+      for (var i = 0; i < 300; ++i) {
+        var values = List<double>.generate(i + 1, (i) => i.toDouble());
+        expect(
+          SignalFloat32x4Mod4.from(values),
+          predicate<SignalFloat32x4Mod4>(
+            (s) => equalsSignal(s, 4, values.length, values, entriesChunk: 4),
           ),
         );
       }
@@ -425,24 +436,49 @@ void showFunction(
   }
 }
 
+/// Validates the structural invariants of [signal].
+///
+/// [entriesChunk] is the number of entries that the implementation allocates
+/// at a time: `1` for [SignalFloat32x4] and `4` for the implementations whose
+/// SIMD loops are unrolled in chunks of 4 entries ([SignalInt32x4] and
+/// [SignalFloat32x4Mod4]).
 bool equalsSignal<N extends num, E, T extends Signal<N, E, T>>(
   T signal,
   int entryBlockSize,
   int length,
-  List values,
-) {
+  List values, {
+  int entriesChunk = 1,
+}) {
   expect(signal.values, equals(values));
   expect(signal.length, equals(length));
+  expect(signal.entryBlockSize, equals(entryBlockSize));
 
-  var entriesLength = length ~/ entryBlockSize;
-  if (length % 4 != 0) entriesLength++;
+  // Entries actually holding values: `ceil(length / entryBlockSize)`.
+  var valuesEntriesLength = length ~/ entryBlockSize;
+  if (length % entryBlockSize != 0) valuesEntriesLength++;
+  expect(signal.valuesEntriesLength, equals(valuesEntriesLength));
+
+  // Allocated entries: `valuesEntriesLength` rounded up to `entriesChunk`.
+  var entriesLength = valuesEntriesLength;
+  if (entriesLength % entriesChunk != 0) {
+    entriesLength += entriesChunk - (entriesLength % entriesChunk);
+  }
   expect(signal.entriesLength, equals(entriesLength));
+  expect(signal.entries.length, equals(entriesLength));
 
   var capacity = entriesLength * entryBlockSize;
   expect(signal.capacity, equals(capacity));
+  expect(signal.capacity >= signal.length, isTrue);
 
-  var lastEntryLength = length - max(0, (capacity - entryBlockSize));
+  // The last entry holding values is never empty and never overflows a block:
+  var lastEntryLength = length == 0
+      ? 0
+      : (length % entryBlockSize == 0
+            ? entryBlockSize
+            : length % entryBlockSize);
   expect(signal.lastEntryLength, equals(lastEntryLength));
+  expect(signal.lastEntryLength <= entryBlockSize, isTrue);
+  expect(signal.lastEntryLength >= 0, isTrue);
 
   return true;
 }

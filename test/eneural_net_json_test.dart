@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:eneural_net/eneural_net.dart';
 import 'package:test/test.dart';
 
@@ -9,22 +12,30 @@ void main() {
     true,
   );
 
+  ANN<double, Float32x4, SignalFloat32x4, Scale<double>> buildANN({
+    ActivationFunction<double, Float32x4>? activationFunction,
+    int seed = 101,
+  }) {
+    var af = activationFunction ?? ActivationFunctionSigmoid();
+
+    return ANN(
+      scaleDouble,
+      LayerFloat32x4(2, true, af),
+      [HiddenLayerConfig(3, true)],
+      LayerFloat32x4(1, false, af),
+      random: Random(seed),
+    );
+  }
+
   group('JSON', () {
     setUp(() {
       print('================================================================');
     });
 
     test('Backpropagation + ActivationFunctionSigmoid', () {
-      var activationFunction = ActivationFunctionSigmoid();
-
       var samplesSet = SamplesSet(samplesXorFloat32x4, subject: 'xor');
 
-      var ann1 = ANN(
-        scaleDouble,
-        LayerFloat32x4(2, true, activationFunction),
-        [HiddenLayerConfig(3, true)],
-        LayerFloat32x4(1, false, activationFunction),
-      );
+      var ann1 = buildANN();
 
       var ann1Json1 = ann1.toJson(withIndent: true);
       print(ann1Json1);
@@ -37,6 +48,7 @@ void main() {
       expect(ann2.toJson(), equals(ann1Json1));
 
       var training = Backpropagation(ann1, samplesSet);
+      training.logEnabled = false;
 
       var trainError = training.train(1000, 0.01);
 
@@ -55,6 +67,62 @@ void main() {
       print('annGlobalError3: $annGlobalError3');
 
       expect(annGlobalError3, equals(annGlobalError1));
+    });
+
+    test('round-trips every Float32x4 activation function', () {
+      var functions = <ActivationFunction<double, Float32x4>>[
+        ActivationFunctionSigmoid(),
+        ActivationFunctionSigmoidFast(),
+        ActivationFunctionSigmoidBoundedFast(),
+        ActivationFunctionSigmoidBoundedFast(scale: 3),
+        ActivationFunctionLinear(),
+      ];
+
+      for (var af in functions) {
+        var ann = buildANN(activationFunction: af);
+        var json = ann.toJson();
+
+        var decoded = ANN.fromJson(json);
+
+        expect(decoded.toJson(), equals(json), reason: af.name);
+        expect(decoded.allWeights, equals(ann.allWeights), reason: af.name);
+        expect(
+          decoded.outputLayer.activationFunction.runtimeType,
+          equals(af.runtimeType),
+          reason: af.name,
+        );
+      }
+    });
+
+    test('the JSON is stable across repeated round-trips', () {
+      var ann = buildANN();
+
+      var json1 = ann.toJson();
+      var json2 = ANN.fromJson(json1).toJson();
+      var json3 = ANN.fromJson(json2).toJson();
+
+      expect(json2, equals(json1));
+      expect(json3, equals(json1));
+    });
+
+    test('a trained ANN keeps its predictions after a round-trip', () {
+      var ann = buildANN();
+      var samplesSet = SamplesSet(samplesXorFloat32x4, subject: 'xor');
+
+      var training = Backpropagation(ann, samplesSet);
+      training.logEnabled = false;
+      training.train(500, 0.001);
+
+      var expected = ann.computeSamplesActivations(samplesXorFloat32x4);
+
+      var decoded =
+          ANN.fromJson(ann.toJson())
+              as ANN<double, Float32x4, SignalFloat32x4, Scale<double>>;
+
+      expect(
+        decoded.computeSamplesActivations(samplesXorFloat32x4),
+        equals(expected),
+      );
     });
   });
 }

@@ -47,9 +47,8 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     Iterable<Layer<N, E, T, S>>? hiddenLayers,
     Random? random,
   ]) {
-    if (outputLayer.withBiasNeuron) {
-      throw StateError("Can't have bias neuron at output layer: $outputLayer");
-    }
+    // NOTE: a bias neuron at the output layer is rejected by
+    // `Layer.asLayerOutput`, called while initializing [outputLayer].
 
     if (hiddenLayersConfig != null) {
       var defaultActivationFunction = _defaultActivationFunction();
@@ -562,7 +561,9 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
       'neurons': neurons.length,
       'bias': withBiasNeuron,
       'activation': activationFunction.toJsonMap(),
-      if (this is! LayerOutput)
+      // `weights` are only initialized by `connectTo`, and an output
+      // layer never has weights:
+      if (this is! LayerOutput && hasNextLayer)
         'weights': weights.map((e) => e.values).toList(),
     };
   }
@@ -655,6 +656,9 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           rand,
         );
       }
+
+      // Keep the values beyond `length` neutral (they don't map to a neuron):
+      weights.setExtraValuesToZero();
     }
   }
 
@@ -716,8 +720,12 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   LayerHidden<N, E, T, S> get asLayerHidden =>
       LayerHidden._(neurons, withBiasNeuron, activationFunction);
 
-  LayerOutput<N, E, T, S> get asLayerOutput =>
-      LayerOutput._(neurons, activationFunction);
+  LayerOutput<N, E, T, S> get asLayerOutput {
+    if (withBiasNeuron) {
+      throw StateError("Can't have bias neuron at output layer: $this");
+    }
+    return LayerOutput._(neurons, activationFunction);
+  }
 
   @override
   String toString() {

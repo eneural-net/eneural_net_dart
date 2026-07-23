@@ -180,7 +180,12 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
 
   @override
   void initializeValue() {
-    _initialValue = (1 / _propagation.trainingSamplesSize) * multiplier;
+    var trainingSamplesSize = _propagation.trainingSamplesSize;
+    // Before the training is initialized `trainingSamplesSize` is 0.
+    // Avoids an `Infinity` learning rate:
+    _initialValue = trainingSamplesSize > 0
+        ? (1 / trainingSamplesSize) * multiplier
+        : multiplier;
     setValue(_initialValue);
     _noLearnCount = 0;
     _noLearnNearZeroCount = 0;
@@ -198,12 +203,13 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
 
   @override
   void updateValue() {
-    _noLearnNearZeroCount = 0;
-
     var lastImprovement =
         _propagation.globalLearnError - _propagation.lastGlobalLearnError;
 
     if (lastImprovement > 0) {
+      // The error grew: decrease the learning rate every 10 epochs.
+      _noLearnNearZeroCount = 0;
+
       if (++_noLearnCount % 10 == 0) {
         var learningRate = _learningRate * 0.90;
         learningRate = max(learningRate, _initialValue / 1000);
@@ -215,14 +221,20 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
       var lastImprovementRatio =
           lastImprovement / _propagation.lastGlobalLearnError;
 
-      if (lastImprovementRatio > -1.0E-4 && ++_noLearnNearZeroCount % 10 == 0) {
-        var learningRate = _learningRate * 1.10;
+      if (lastImprovementRatio > -1.0E-4) {
+        // The error is barely improving: recover the learning rate
+        // every 10 epochs.
+        if (++_noLearnNearZeroCount % 10 == 0) {
+          var learningRate = _learningRate * 1.10;
 
-        if (learningRate > _initialValue) {
-          learningRate = _initialValue;
+          if (learningRate > _initialValue) {
+            learningRate = _initialValue;
+          }
+
+          setValue(learningRate);
+          _noLearnNearZeroCount = 0;
         }
-
-        setValue(learningRate);
+      } else {
         _noLearnNearZeroCount = 0;
       }
     }
