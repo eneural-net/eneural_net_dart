@@ -19,9 +19,9 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   final int _size;
 
   SignalInt32x4(int size)
-      : _size = size,
-        _entries = Int32x4List(calcEntriesCapacity(size)),
-        _entriesLength = calcEntriesCapacity(size) {
+    : _size = size,
+      _entries = Int32x4List(calcEntriesCapacity(size)),
+      _entriesLength = calcEntriesCapacity(size) {
     assert(_entries.length == _entriesLength);
   }
 
@@ -29,7 +29,7 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 4);
 
   SignalInt32x4._(this._entries, this._size)
-      : _entriesLength = _entries.length {
+    : _entriesLength = _entries.length {
     assert(_entries.length == _entriesLength);
   }
 
@@ -103,8 +103,11 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   SignalInt32x4 createInstance(int size) => SignalInt32x4(size);
 
   @override
-  SignalInt32x4 createRandomInstance(int size, int randomScale,
-      [Random? rand]) {
+  SignalInt32x4 createRandomInstance(
+    int size,
+    int randomScale, [
+    Random? rand,
+  ]) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalInt32x4.fromEntries(entries, size);
@@ -161,7 +164,9 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   Int32x4 getEntryFilteredX4(
-      int index, Int32x4 Function(Int32x4 entry) filter) {
+    int index,
+    Int32x4 Function(Int32x4 entry) filter,
+  ) {
     return filter(_entries[index]);
   }
 
@@ -261,10 +266,11 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
   @override
   Int32x4 createRandomEntry(int scale, [Random? rand]) {
     return Int32x4(
-        createRandomValue(scale, rand),
-        createRandomValue(scale, rand),
-        createRandomValue(scale, rand),
-        createRandomValue(scale, rand));
+      createRandomValue(scale, rand),
+      createRandomValue(scale, rand),
+      createRandomValue(scale, rand),
+      createRandomValue(scale, rand),
+    );
   }
 
   @override
@@ -427,13 +433,15 @@ class SignalInt32x4 extends Signal<int, Int32x4, SignalInt32x4> {
 
   @override
   Int32x4 normalizeEntry(Int32x4 entry, Scale<int> scale) => createEntry4(
-      scale.normalize(entry.x),
-      scale.normalize(entry.y),
-      scale.normalize(entry.z),
-      scale.normalize(entry.w));
+    scale.normalize(entry.x),
+    scale.normalize(entry.y),
+    scale.normalize(entry.z),
+    scale.normalize(entry.w),
+  );
 
-  static final ListEquality<Int32x4> _entriesEquality =
-      ListEquality<Int32x4>(Int32x4Equality());
+  static final ListEquality<Int32x4> _entriesEquality = ListEquality<Int32x4>(
+    Int32x4Equality(),
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -452,10 +460,10 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   static final SignalFloat32x4Mod4 EMPTY = SignalFloat32x4Mod4(0);
 
   SignalFloat32x4Mod4(int size)
-      : super._(Float32x4List(calcEntriesCapacity(size)), size);
+    : super._(Float32x4List(calcEntriesCapacity(size)), size);
 
   SignalFloat32x4Mod4._(Float32x4List entries, int size)
-      : super._(entries, size);
+    : super._(entries, size);
 
   static int calcEntriesCapacity(int size) =>
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 4);
@@ -473,8 +481,11 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
   SignalFloat32x4Mod4 createInstance(int size) => SignalFloat32x4Mod4(size);
 
   @override
-  SignalFloat32x4Mod4 createRandomInstance(int size, double randomScale,
-      [Random? rand]) {
+  SignalFloat32x4Mod4 createRandomInstance(
+    int size,
+    double randomScale, [
+    Random? rand,
+  ]) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalFloat32x4Mod4.fromEntries(entries, size);
@@ -482,7 +493,9 @@ class SignalFloat32x4Mod4 extends SignalFloat32x4 {
 
   @override
   SignalFloat32x4Mod4 createInstanceWithEntries(
-      int size, List<Float32x4> entries) {
+    int size,
+    List<Float32x4> entries,
+  ) {
     ensureEntriesLengthMod(entries);
     return SignalFloat32x4Mod4._(Float32x4List.fromList(entries), size);
   }
@@ -612,9 +625,9 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   final int _size;
 
   SignalFloat32x4(int size)
-      : _size = size,
-        _entries = Float32x4List(calcEntriesCapacity(size)),
-        _entriesLength = calcEntriesCapacity(size) {
+    : _size = size,
+      _entries = Float32x4List(calcEntriesCapacity(size)),
+      _entriesLength = calcEntriesCapacity(size) {
     assert(_entries.length == _entriesLength);
   }
 
@@ -622,7 +635,7 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
       Signal.calcNeededBlocksChunks(size, ENTRY_BLOCK_SIZE, 1);
 
   SignalFloat32x4._(this._entries, this._size)
-      : _entriesLength = _entries.length {
+    : _entriesLength = _entries.length {
     assert(_entries.length == _entriesLength);
   }
 
@@ -723,8 +736,11 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   SignalFloat32x4 createInstance(int size) => SignalFloat32x4(size);
 
   @override
-  SignalFloat32x4 createRandomInstance(int size, double randomScale,
-      [Random? rand]) {
+  SignalFloat32x4 createRandomInstance(
+    int size,
+    double randomScale, [
+    Random? rand,
+  ]) {
     var capacity = calcEntriesCapacityForSize(size);
     var entries = createRandomEntries(capacity, randomScale, rand);
     return SignalFloat32x4.fromEntries(entries, size);
@@ -757,7 +773,9 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   Float32x4 getEntryFilteredX4(
-      int index, Float32x4 Function(Float32x4 n) filter) {
+    int index,
+    Float32x4 Function(Float32x4 n) filter,
+  ) {
     return filter(_entries[index]);
   }
 
@@ -835,10 +853,19 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
       Float32x4(v0, v1, v2, v3);
 
   @override
-  Float32x4 createEntryFrom(Float32x4 other,
-      [double? v0, double? v1, double? v2, double? v3]) {
+  Float32x4 createEntryFrom(
+    Float32x4 other, [
+    double? v0,
+    double? v1,
+    double? v2,
+    double? v3,
+  ]) {
     return Float32x4(
-        v0 ?? other.x, v1 ?? other.y, v2 ?? other.z, v3 ?? other.w);
+      v0 ?? other.x,
+      v1 ?? other.y,
+      v2 ?? other.z,
+      v3 ?? other.w,
+    );
   }
 
   @override
@@ -866,10 +893,11 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
     rand ??= _random;
 
     return Float32x4(
-        _createRandomValue(scale, rand),
-        _createRandomValue(scale, rand),
-        _createRandomValue(scale, rand),
-        _createRandomValue(scale, rand));
+      _createRandomValue(scale, rand),
+      _createRandomValue(scale, rand),
+      _createRandomValue(scale, rand),
+      _createRandomValue(scale, rand),
+    );
   }
 
   @override
@@ -987,8 +1015,12 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
 
   @override
   Float32x4 normalizeEntry(Float32x4 entry, Scale<double> scale) =>
-      createEntry4(scale.normalize(entry.x), scale.normalize(entry.y),
-          scale.normalize(entry.z), scale.normalize(entry.w));
+      createEntry4(
+        scale.normalize(entry.x),
+        scale.normalize(entry.y),
+        scale.normalize(entry.z),
+        scale.normalize(entry.w),
+      );
 
   static final ListEquality<Float32x4> _entriesEquality =
       ListEquality<Float32x4>(Float32x4Equality());
@@ -1018,13 +1050,11 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
     return blocks;
   }
 
-  static Signal<N, E, T>
-      fromFormat<N extends num, E, T extends Signal<N, E, T>>(
-    String format, {
-    int? size,
-    List<N>? values,
-    List<E>? entries,
-  }) {
+  static Signal<N, E, T> fromFormat<
+    N extends num,
+    E,
+    T extends Signal<N, E, T>
+  >(String format, {int? size, List<N>? values, List<E>? entries}) {
     switch (format) {
       case 'Float32x4':
         {
@@ -1032,7 +1062,10 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
             return SignalFloat32x4.from(values.asDoubles()) as Signal<N, E, T>;
           } else if (entries != null) {
             return SignalFloat32x4.fromEntries(
-                entries as List<Float32x4>, size!) as Signal<N, E, T>;
+                  entries as List<Float32x4>,
+                  size!,
+                )
+                as Signal<N, E, T>;
           } else {
             return SignalFloat32x4(size!) as Signal<N, E, T>;
           }
@@ -1055,7 +1088,10 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
                 as Signal<N, E, T>;
           } else if (entries != null) {
             return SignalFloat32x4Mod4.fromEntries(
-                entries as List<Float32x4>, size!) as Signal<N, E, T>;
+                  entries as List<Float32x4>,
+                  size!,
+                )
+                as Signal<N, E, T>;
           } else {
             return SignalFloat32x4Mod4(size!) as Signal<N, E, T>;
           }
@@ -1098,7 +1134,6 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
       throw UnsupportedError('Fixed-length list: $length');
 
   @override
-
   /// Returns [values] length.
   int get length;
 
@@ -1539,7 +1574,8 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
           }
         default:
           throw StateError(
-              'Invalid state: $size - $sizeMod = $diff (entryBlockSize: $entryBlockSize)');
+            'Invalid state: $size - $sizeMod = $diff (entryBlockSize: $entryBlockSize)',
+          );
       }
 
       entries.add(tailEntry);
@@ -1595,7 +1631,9 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   /// Returns the differences of this instances [values] to [otherValues].
   List<N> diff(List<N> otherValues) => List.generate(
-      otherValues.length, (i) => toN(getValue(i) - otherValues[i]));
+    otherValues.length,
+    (i) => toN(getValue(i) - otherValues[i]),
+  );
 
   /// Returns the absolute differences of this instances [values] to [otherValues].
   List<N> diffAbs(List<N> values) =>
@@ -1618,8 +1656,11 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
       errors(output).squaresMean.squareRoot;
 
   @override
-  String toString(
-      {int maxElements = 10, bool entries = false, bool infos = false}) {
+  String toString({
+    int maxElements = 10,
+    bool entries = false,
+    bool infos = false,
+  }) {
     if (infos) {
       return entries
           ? toStringWithEntries(maxElements)

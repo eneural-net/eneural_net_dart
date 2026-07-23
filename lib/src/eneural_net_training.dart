@@ -7,19 +7,36 @@ import 'eneural_net_scale.dart';
 import 'eneural_net_signal.dart';
 
 /// A builder for [Training] instances.
-typedef TrainingBuilder<N extends num, E, T extends Signal<N, E, T>,
-        S extends Scale<N>, P extends Sample<N, E, T, S>>
-    = Training<N, E, T, S, P> Function(
-        ANN<N, E, T, S> ann, SamplesSet<P> samplesSet);
+typedef TrainingBuilder<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+> =
+    Training<N, E, T, S, P> Function(
+      ANN<N, E, T, S> ann,
+      SamplesSet<P> samplesSet,
+    );
 
 /// Training logger.
-typedef TrainingLogger = void Function(
-    Training training, String type, String message,
-    [dynamic error, StackTrace? stackTrace]);
+typedef TrainingLogger =
+    void Function(
+      Training training,
+      String type,
+      String message, [
+      dynamic error,
+      StackTrace? stackTrace,
+    ]);
 
 /// The default [TrainingLogger].
-void defaultTrainingLogger(Training training, String type, String message,
-    [dynamic error, StackTrace? stackTrace]) {
+void defaultTrainingLogger(
+  Training training,
+  String type,
+  String message, [
+  dynamic error,
+  StackTrace? stackTrace,
+]) {
   var algorithmName = training.algorithmName;
 
   print('$algorithmName> [$type] $message');
@@ -35,13 +52,22 @@ void defaultTrainingLogger(Training training, String type, String message,
 
 @Deprecated("Use `defaultTrainingLogger`")
 // ignore: non_constant_identifier_names
-DefaultTrainingLogger(Training training, String type, String message,
-        [dynamic error, StackTrace? stackTrace]) =>
-    defaultTrainingLogger(training, type, message, error, stackTrace);
+DefaultTrainingLogger(
+  Training training,
+  String type,
+  String message, [
+  dynamic error,
+  StackTrace? stackTrace,
+]) => defaultTrainingLogger(training, type, message, error, stackTrace);
 
 /// Base class for training algorithms.
-abstract class Training<N extends num, E, T extends Signal<N, E, T>,
-    S extends Scale<N>, P extends Sample<N, E, T, S>> {
+abstract class Training<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+> {
   /// The training algorithm name.
   final String algorithmName;
 
@@ -56,10 +82,14 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
 
   final TrainingLogger logger;
 
-  Training(this.ann, this.samplesSet, this.algorithmName,
-      {String? subject, TrainingLogger? logger})
-      : subject = samplesSet.subject,
-        logger = logger ?? defaultTrainingLogger;
+  Training(
+    this.ann,
+    this.samplesSet,
+    this.algorithmName, {
+    String? subject,
+    TrainingLogger? logger,
+  }) : subject = samplesSet.subject,
+       logger = logger ?? defaultTrainingLogger;
 
   /// If true logging will be enabled.
   bool logEnabled = true;
@@ -134,21 +164,24 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
 
   Duration? get elapsedTime => _startTime != null && _endTime != null
       ? Duration(
-          microseconds: _endTime!.microsecondsSinceEpoch -
-              _startTime!.microsecondsSinceEpoch)
+          microseconds:
+              _endTime!.microsecondsSinceEpoch -
+              _startTime!.microsecondsSinceEpoch,
+        )
       : null;
 
   /// Train the [ann] until [targetGlobalError],
   /// with [maxEpochs] per training session and
   /// a [maxRetries] when a training session can't reach the target global error.
-  bool trainUntilGlobalError(
-      {double? targetGlobalError,
-      int epochsBlock = 50,
-      int maxEpochs = 1000000,
-      double maxEpochsLimitRatio = 3,
-      int maxRetries = 5,
-      double retryIncreaseMaxEpochsRatio = 1.50,
-      Random? random}) {
+  bool trainUntilGlobalError({
+    double? targetGlobalError,
+    int epochsBlock = 50,
+    int maxEpochs = 1000000,
+    double maxEpochsLimitRatio = 3,
+    int maxRetries = 5,
+    double retryIncreaseMaxEpochsRatio = 1.50,
+    Random? random,
+  }) {
     initializeTraining();
 
     targetGlobalError ??= samplesSet.targetGlobalError;
@@ -172,7 +205,8 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
     _setStartTime();
 
     logInfo(
-        'Started $algorithmName training session "$subject". { samples: ${samples.length} ; targetGlobalError: $targetGlobalError }');
+      'Started $algorithmName training session "$subject". { samples: ${samples.length} ; targetGlobalError: $targetGlobalError }',
+    );
 
     var initialMaxEpochs = maxEpochs;
 
@@ -190,8 +224,10 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
       while (_globalError > targetGlobalError && _trainedEpochs < maxEpochs) {
         _trainImpl(samples, epochsBlock, targetGlobalError);
         errorEvolution.add(_globalError);
-        errorEvolution.ensureMaximumSize(errorEvolutionMaxSize,
-            removeExtras: errorEvolutionMaxSize ~/ 10);
+        errorEvolution.ensureMaximumSize(
+          errorEvolutionMaxSize,
+          removeExtras: errorEvolutionMaxSize ~/ 10,
+        );
       }
 
       if (_globalError <= targetGlobalError) {
@@ -203,9 +239,11 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
       if (doExtraEpochsCount < 3) {
         var lastExtraEpochsGlobalError = _globalError;
 
-        for (var extraEpochsI = 1;
-            extraEpochsI <= 3 && _globalError <= lastExtraEpochsGlobalError;
-            ++extraEpochsI) {
+        for (
+          var extraEpochsI = 1;
+          extraEpochsI <= 3 && _globalError <= lastExtraEpochsGlobalError;
+          ++extraEpochsI
+        ) {
           var doExtraEpochs = false;
 
           var movingAverage = errorEvolution.movingAverage(epochsBlock);
@@ -223,10 +261,12 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
               doExtraEpochs = true;
 
               logProgress(
-                  'Evolving[$extraEpochsI]> $movingAverageTail6Mean -> $movingAverageTail3Mean -> $movingAverageTail1Mean');
+                'Evolving[$extraEpochsI]> $movingAverageTail6Mean -> $movingAverageTail3Mean -> $movingAverageTail1Mean',
+              );
             } else {
               logProgress(
-                  'NOT Evolving[$extraEpochsI]> $movingAverageTail6Mean -> $movingAverageTail3Mean -> $movingAverageTail1Mean');
+                'NOT Evolving[$extraEpochsI]> $movingAverageTail6Mean -> $movingAverageTail3Mean -> $movingAverageTail1Mean',
+              );
             }
           }
 
@@ -238,14 +278,17 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
             var maxEpochsExtra = (maxEpochs * (extraEpochsI + 1)).toInt();
 
             logProgress(
-                '[$algorithmName/$subject] Extra Epochs> doExtraEpochsCount: $doExtraEpochsCount ; maxEpochs: $maxEpochs -> $maxEpochsExtra');
+              '[$algorithmName/$subject] Extra Epochs> doExtraEpochsCount: $doExtraEpochsCount ; maxEpochs: $maxEpochs -> $maxEpochsExtra',
+            );
 
             while (_globalError > targetGlobalError &&
                 _trainedEpochs < maxEpochsExtra) {
               _trainImpl(samples, epochsBlock, targetGlobalError);
               errorEvolution.add(_globalError);
-              errorEvolution.ensureMaximumSize(errorEvolutionMaxSize,
-                  removeExtras: errorEvolutionMaxSize ~/ 10);
+              errorEvolution.ensureMaximumSize(
+                errorEvolutionMaxSize,
+                removeExtras: errorEvolutionMaxSize ~/ 10,
+              );
             }
 
             if (_globalError <= targetGlobalError) {
@@ -280,7 +323,8 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
 
     _setEndTime();
     logInfo(
-        "(FAIL) Training failed! Can't reach target error $targetGlobalError in $_totalTrainedEpochs epochs. Lowest training error: $_globalError");
+      "(FAIL) Training failed! Can't reach target error $targetGlobalError in $_totalTrainedEpochs epochs. Lowest training error: $_globalError",
+    );
 
     return false;
   }
@@ -295,7 +339,8 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
 
   void _logReachedTargetError(double targetGlobalError) {
     logInfo(
-        '(OK) Reached target error in $_totalTrainedEpochs epochs (${elapsedTime?.toStringUnit()}). Final error: $_globalError <= $targetGlobalError');
+      '(OK) Reached target error in $_totalTrainedEpochs epochs (${elapsedTime?.toStringUnit()}). Final error: $_globalError <= $targetGlobalError',
+    );
   }
 
   int _totalTrainedEpochs = 0;
@@ -378,7 +423,8 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
           (_globalError - _lastGlobalError) / _lastGlobalError;
 
       logProgress(
-          '[$algorithmName/$subject] $_trainedEpochs / $_totalTrainedEpochs> $globalError ($errorChangeRatio) / $targetGlobalError > $parameters');
+        '[$algorithmName/$subject] $_trainedEpochs / $_totalTrainedEpochs> $globalError ($errorChangeRatio) / $targetGlobalError > $parameters',
+      );
     }
 
     return globalError;
@@ -409,8 +455,11 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
   /// Default implementations uses a pool of random ANNs and selects the
   /// one with the lowest error. The actual implementation only allocates
   /// 1 ANN.
-  void selectInitialANN(List<P> samples, double targetGlobalError,
-      [Random? random]) {
+  void selectInitialANN(
+    List<P> samples,
+    double targetGlobalError, [
+    Random? random,
+  ]) {
     if (initialAnnPoolSize <= 1) return;
 
     random ??= _random;
@@ -449,7 +498,8 @@ abstract class Training<N extends num, E, T extends Signal<N, E, T>,
     _globalError = ann.computeSamplesGlobalError(samples);
 
     logInfo(
-        'Selected initial ANN from poll of size ${pool.length}, executing $_selectInitialANNEpochs epochs. Lowest error: $minError ($_globalError)');
+      'Selected initial ANN from poll of size ${pool.length}, executing $_selectInitialANNEpochs epochs. Lowest error: $minError ($_globalError)',
+    );
   }
 
   double computeGlobalError(List<P> samples) {

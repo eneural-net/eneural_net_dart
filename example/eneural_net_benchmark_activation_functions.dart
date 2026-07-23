@@ -19,8 +19,11 @@ void main() async {
     var benchmarks = <Chronometer>[];
 
     for (var af in activationFunctions) {
-      var bestResult =
-          benchmark(benchmarks, 3, () => runAnnFloat32x4(totalOperations, af));
+      var bestResult = benchmark(
+        benchmarks,
+        3,
+        () => runAnnFloat32x4(totalOperations, af),
+      );
 
       print('bestResult: $bestResult > $af');
       print('------------------\n');
@@ -43,8 +46,11 @@ void main() async {
   }
 }
 
-Chronometer benchmark(List<Chronometer> allBenchmarks, int sessions,
-    Chronometer Function() runner) {
+Chronometer benchmark(
+  List<Chronometer> allBenchmarks,
+  int sessions,
+  Chronometer Function() runner,
+) {
   var results = <Chronometer>[];
 
   for (var i = 0; i < sessions; ++i) {
@@ -67,7 +73,9 @@ var in4 = Float32x4(-2.0, -1.0, 1.0, 2.0);
 var in5 = Float32x4(-12.0, -6.0, 6.0, 12.0);
 
 Chronometer runAnnFloat32x4(
-    int limit, ActivationFunction<double, Float32x4> activationFunction) {
+  int limit,
+  ActivationFunction<double, Float32x4> activationFunction,
+) {
   print(activationFunction);
 
   var chronometer = Chronometer(activationFunction.name).start();

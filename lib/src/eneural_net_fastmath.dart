@@ -37,7 +37,7 @@ const _eighths = <double>[
   1.25,
   1.375,
   1.5,
-  1.625
+  1.625,
 ];
 
 /// Compute the hyperbolic cosine of a number.
@@ -186,8 +186,9 @@ Float32x4 _float32x4_0_1666666505023083 = Float32x4.splat(0.1666666505023083);
 Float32x4 _float32x4_0_5000000000042687 = Float32x4.splat(0.5000000000042687);
 Float32x4 _float32x4_1_0 = Float32x4.splat(1.0);
 // ignore: non_constant_identifier_names
-Float32x4 _float32x4__3_940510424527919E_20 =
-    Float32x4.splat(-3.940510424527919E-20);
+Float32x4 _float32x4__3_940510424527919E_20 = Float32x4.splat(
+  -3.940510424527919E-20,
+);
 
 /// SIMD Optimized Exponential function.
 ///
@@ -213,13 +214,25 @@ Float32x4 expFloat32x4(Float32x4 entry) {
   // Lookup exp(floor(x)).
   // intPartA will have the upper 22 bits, intPartB will have the lower
   // 52 bits.
-  final intPartA = Float32x4(expIntTableA[xIdx], expIntTableA[yIdx],
-      expIntTableA[zIdx], expIntTableA[wIdx]);
-  final intPartB = Float32x4(expIntTableB[xIdx], expIntTableB[yIdx],
-      expIntTableB[zIdx], expIntTableB[wIdx]);
+  final intPartA = Float32x4(
+    expIntTableA[xIdx],
+    expIntTableA[yIdx],
+    expIntTableA[zIdx],
+    expIntTableA[wIdx],
+  );
+  final intPartB = Float32x4(
+    expIntTableB[xIdx],
+    expIntTableB[yIdx],
+    expIntTableB[zIdx],
+    expIntTableB[wIdx],
+  );
 
   final entryInt = Float32x4(
-      xInt.toDouble(), yInt.toDouble(), zInt.toDouble(), wInt.toDouble());
+    xInt.toDouble(),
+    yInt.toDouble(),
+    zInt.toDouble(),
+    wInt.toDouble(),
+  );
 
   // Get the fractional part of x, find the greatest multiple of 2^-10 less than
   // x and look up the exp function of it.
@@ -231,16 +244,25 @@ Float32x4 expFloat32x4(Float32x4 entry) {
   final fracIntZ = frac.z.toInt();
   final fracIntW = frac.w.toInt();
 
-  final fracPartA = Float32x4(expFracTableA[fracIntX], expFracTableA[fracIntY],
-      expFracTableA[fracIntZ], expFracTableA[fracIntW]);
-  final fracPartB = Float32x4(expFracTableB[fracIntX], expFracTableB[fracIntY],
-      expFracTableB[fracIntZ], expFracTableB[fracIntW]);
+  final fracPartA = Float32x4(
+    expFracTableA[fracIntX],
+    expFracTableA[fracIntY],
+    expFracTableA[fracIntZ],
+    expFracTableA[fracIntW],
+  );
+  final fracPartB = Float32x4(
+    expFracTableB[fracIntX],
+    expFracTableB[fracIntY],
+    expFracTableB[fracIntZ],
+    expFracTableB[fracIntW],
+  );
 
   // epsilon is the difference in x from the nearest multiple of 2^-10.  It
   // has a value in the range 0 <= epsilon < 2^-10.
   // Do the subtraction from x as the last step to avoid possible
   // loss of precision.
-  final epsilon = entry -
+  final epsilon =
+      entry -
       (entryInt +
           Float32x4(
                 fracIntX.toDouble(),
@@ -286,8 +308,11 @@ Float32x4 expFloat32x4(Float32x4 entry) {
 /// [x] is the original argument of the exponential function.
 /// [extra] bits of precision on input (To Be Confirmed).
 /// [highPrecision] extra bits of precision on output (To Be Confirmed)
-double expHighPrecision(double x,
-    [double extra = 0.0, List<double>? highPrecision]) {
+double expHighPrecision(
+  double x, [
+  double extra = 0.0,
+  List<double>? highPrecision,
+]) {
   double intPartA;
   double intPartB;
   int intVal;
@@ -308,7 +333,8 @@ double expHighPrecision(double x,
 
     if (intVal > 709) {
       // This will produce a subnormal output
-      final result = expHighPrecision(x + 40.19140625, extra, highPrecision) /
+      final result =
+          expHighPrecision(x + 40.19140625, extra, highPrecision) /
           285040095144011776.0;
       if (highPrecision != null) {
         highPrecision[0] /= 285040095144011776.0;
@@ -319,7 +345,8 @@ double expHighPrecision(double x,
 
     if (intVal == 709) {
       // exp(1.494140625) is nearly a machine number...
-      final result = expHighPrecision(x + 1.494140625, extra, highPrecision) /
+      final result =
+          expHighPrecision(x + 1.494140625, extra, highPrecision) /
           4.455505956692756620;
       if (highPrecision != null) {
         highPrecision[0] /= 4.455505956692756620;
@@ -474,7 +501,7 @@ double sinh(double x) {
     // Correct for rounding in division
     recipb +=
         (1.0 - yaa * recipa - yaa * recipb - yab * recipa - yab * recipb) *
-            recip;
+        recip;
     // Account for yb
     recipb += -yb * recip * recip;
 
@@ -571,9 +598,10 @@ double atan(double xa, [double xb = 0.0, bool leftPlane = false]) {
     idx = (((-1.7168146928204136 * xa * xa + 8.0) * xa) + 0.5).toInt();
   } else {
     final oneOverXa = 1 / xa;
-    idx = (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) +
-            13.07)
-        .toInt();
+    idx =
+        (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) +
+                13.07)
+            .toInt();
   }
 
   final ttA = tangentTableA[idx];

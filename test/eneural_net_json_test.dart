@@ -3,12 +3,11 @@ import 'package:test/test.dart';
 
 void main() {
   var scaleDouble = ScaleDouble.ZERO_TO_ONE;
-  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString([
-    '0,0=0',
-    '0,1=1',
-    '1,0=1',
-    '1,1=0',
-  ], scaleDouble, true);
+  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString(
+    ['0,0=0', '0,1=1', '1,0=1', '1,1=0'],
+    scaleDouble,
+    true,
+  );
 
   group('JSON', () {
     setUp(() {
@@ -21,10 +20,11 @@ void main() {
       var samplesSet = SamplesSet(samplesXorFloat32x4, subject: 'xor');
 
       var ann1 = ANN(
-          scaleDouble,
-          LayerFloat32x4(2, true, activationFunction),
-          [HiddenLayerConfig(3, true)],
-          LayerFloat32x4(1, false, activationFunction));
+        scaleDouble,
+        LayerFloat32x4(2, true, activationFunction),
+        [HiddenLayerConfig(3, true)],
+        LayerFloat32x4(1, false, activationFunction),
+      );
 
       var ann1Json1 = ann1.toJson(withIndent: true);
       print(ann1Json1);

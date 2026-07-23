@@ -178,9 +178,11 @@ void main() {
       for (var i = 0; i < 300; ++i) {
         var values = List<int>.generate(i, (i) => i);
         expect(
-            SignalInt32x4.from(values),
-            predicate<SignalInt32x4>(
-                (s) => equalsSignal(s, 4, values.length, values)));
+          SignalInt32x4.from(values),
+          predicate<SignalInt32x4>(
+            (s) => equalsSignal(s, 4, values.length, values),
+          ),
+        );
       }
     });
 
@@ -188,9 +190,11 @@ void main() {
       for (var i = 0; i < 300; ++i) {
         var values = List<double>.generate(i + 1, (i) => i.toDouble());
         expect(
-            SignalFloat32x4.from(values),
-            predicate<SignalFloat32x4>(
-                (s) => equalsSignal(s, 4, values.length, values)));
+          SignalFloat32x4.from(values),
+          predicate<SignalFloat32x4>(
+            (s) => equalsSignal(s, 4, values.length, values),
+          ),
+        );
       }
     });
   });
@@ -199,20 +203,18 @@ void main() {
     test('SampleInt32x4', () {
       var scale = ScaleInt.ZERO_TO_ONE;
 
-      var samples = SampleInt32x4.toListFromString([
-        '0,0=0',
-        '1,0=1',
-        '0,1=1',
-        '1,1=0',
-      ], scale, true);
+      var samples = SampleInt32x4.toListFromString(
+        ['0,0=0', '1,0=1', '0,1=1', '1,1=0'],
+        scale,
+        true,
+      );
 
       expect(samples.length, equals(4));
 
       expect(
-          samples[0],
-          equals(
-            SampleInt32x4.fromNormalized([0, 0], [0], scale),
-          ));
+        samples[0],
+        equals(SampleInt32x4.fromNormalized([0, 0], [0], scale)),
+      );
 
       expect(samples[0].input, equals(SignalInt32x4.from([0, 0])));
       expect(samples[0].input.length, equals(2));
@@ -232,20 +234,18 @@ void main() {
     test('SampleFloat32x4', () {
       var scale = ScaleDouble.ZERO_TO_ONE;
 
-      var samples = SampleFloat32x4.toListFromString([
-        '0,0=0',
-        '1,0=1',
-        '0,1=1',
-        '1,1=0',
-      ], scale, true);
+      var samples = SampleFloat32x4.toListFromString(
+        ['0,0=0', '1,0=1', '0,1=1', '1,1=0'],
+        scale,
+        true,
+      );
 
       expect(samples.length, equals(4));
 
       expect(
-          samples[0],
-          equals(
-            SampleFloat32x4.fromNormalized([0, 0], [0], scale),
-          ));
+        samples[0],
+        equals(SampleFloat32x4.fromNormalized([0, 0], [0], scale)),
+      );
     });
   });
 
@@ -254,7 +254,12 @@ void main() {
       var af = ActivationFunctionSigmoid().activate;
 
       showFunction(
-          'activationFunctionSigmoid', (n) => af(n.toDouble()), -12, 12, 1);
+        'activationFunctionSigmoid',
+        (n) => af(n.toDouble()),
+        -12,
+        12,
+        1,
+      );
 
       var yAt0 = 0.5;
       var yAt1 = 0.2689414213699951;
@@ -279,8 +284,13 @@ void main() {
       af(double o) =>
           ActivationFunctionSigmoid().activateEntry(Float32x4.splat(o)).x;
 
-      showFunction('activationFunctionSigmoid[SIMD]', (n) => af(n.toDouble()),
-          -12, 12, 1);
+      showFunction(
+        'activationFunctionSigmoid[SIMD]',
+        (n) => af(n.toDouble()),
+        -12,
+        12,
+        1,
+      );
 
       expect(af(-1), inExclusiveRange(0.268941425, 0.268941435));
       expect(af(0), equals(0.50));
@@ -302,12 +312,13 @@ void main() {
       var af = ActivationFunctionSigmoidFast().activate;
 
       showFunction(
-          'activationFunctionSigmoidFast',
-          (n) => af(n.toDouble()),
-          -12,
-          12,
-          1,
-          (n) => ActivationFunctionSigmoid().activate(n.toDouble()));
+        'activationFunctionSigmoidFast',
+        (n) => af(n.toDouble()),
+        -12,
+        12,
+        1,
+        (n) => ActivationFunctionSigmoid().activate(n.toDouble()),
+      );
 
       var yAt0 = 0.5;
       var yAt1 = 0.2272727272727273;
@@ -335,12 +346,13 @@ void main() {
       var af = ActivationFunctionSigmoidBoundedFast(scale: 6).activate;
 
       showFunction(
-          'activationFunctionSigmoidBoundedFast',
-          (n) => af(n.toDouble()),
-          -12,
-          12,
-          1,
-          (n) => ActivationFunctionSigmoid().activate(n.toDouble()));
+        'activationFunctionSigmoidBoundedFast',
+        (n) => af(n.toDouble()),
+        -12,
+        12,
+        1,
+        (n) => ActivationFunctionSigmoid().activate(n.toDouble()),
+      );
 
       var yAt0 = 0.5;
       var yAt1 = 0.33783783783783783;
@@ -365,12 +377,13 @@ void main() {
       var af = ActivationFunctionSigmoidFastInt100().activate;
 
       showFunction(
-          'activationFunctionSigmoidFastInt',
-          (n) => af(n.toInt()),
-          -12,
-          12,
-          1,
-          (n) => ActivationFunctionSigmoid().activate(n.toDouble()) * 100);
+        'activationFunctionSigmoidFastInt',
+        (n) => af(n.toInt()),
+        -12,
+        12,
+        1,
+        (n) => ActivationFunctionSigmoid().activate(n.toDouble()) * 100,
+      );
 
       expect(af(-100), equals(1));
       expect(af(-10), equals(9));
@@ -383,15 +396,23 @@ void main() {
   });
 }
 
-void showFunction(String name, Function(num n) f, num min, num max, num step,
-    [Function(num n)? f2]) {
+void showFunction(
+  String name,
+  Function(num n) f,
+  num min,
+  num max,
+  num step, [
+  Function(num n)? f2,
+]) {
   print('FUNCTION: $name');
 
   var center = (max - min) / 2 + min;
 
-  for (var i = min;
-      i <= max;
-      i += ((center - i).abs() < step ? step / 2 : step)) {
+  for (
+    var i = min;
+    i <= max;
+    i += ((center - i).abs() < step ? step / 2 : step)
+  ) {
     var o = f(i);
 
     if (f2 != null) {
@@ -405,7 +426,11 @@ void showFunction(String name, Function(num n) f, num min, num max, num step,
 }
 
 bool equalsSignal<N extends num, E, T extends Signal<N, E, T>>(
-    T signal, int entryBlockSize, int length, List values) {
+  T signal,
+  int entryBlockSize,
+  int length,
+  List values,
+) {
   expect(signal.values, equals(values));
   expect(signal.length, equals(length));
 

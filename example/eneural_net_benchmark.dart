@@ -13,24 +13,30 @@ void main() {
 
     var benchmarks = <Chronometer>[];
 
-    benchmark(benchmarks, 3,
-        () => runAnnFloat32x4(totalOperations, ActivationFunctionSigmoid()));
+    benchmark(
+      benchmarks,
+      3,
+      () => runAnnFloat32x4(totalOperations, ActivationFunctionSigmoid()),
+    );
 
     print('------------------\n');
 
     benchmark(
-        benchmarks,
-        3,
-        () =>
-            runAnnFloat32x4(totalOperations, ActivationFunctionSigmoidFast()));
+      benchmarks,
+      3,
+      () => runAnnFloat32x4(totalOperations, ActivationFunctionSigmoidFast()),
+    );
 
     print('------------------\n');
 
     benchmark(
-        benchmarks,
-        3,
-        () => runAnnFloat32x4(
-            totalOperations, ActivationFunctionSigmoidBoundedFast()));
+      benchmarks,
+      3,
+      () => runAnnFloat32x4(
+        totalOperations,
+        ActivationFunctionSigmoidBoundedFast(),
+      ),
+    );
 
     print('----------------------------------------------------------\n');
 
@@ -49,8 +55,11 @@ void main() {
   }
 }
 
-void benchmark(List<Chronometer> allBenchmarks, int sessions,
-    Chronometer Function() runner) {
+void benchmark(
+  List<Chronometer> allBenchmarks,
+  int sessions,
+  Chronometer Function() runner,
+) {
   var results = <Chronometer>[];
 
   for (var i = 0; i < sessions; ++i) {
@@ -63,24 +72,28 @@ void benchmark(List<Chronometer> allBenchmarks, int sessions,
 }
 
 Chronometer runAnnFloat32x4(
-    int limit, ActivationFunction<double, Float32x4> activationFunction) {
+  int limit,
+  ActivationFunction<double, Float32x4> activationFunction,
+) {
   var scale = ScaleDouble.ZERO_TO_ONE;
 
-  var samples = SampleFloat32x4.toListFromString([
-    '0,0=0',
-    '1,0=1',
-    '0,1=1',
-    '1,1=0',
-  ], scale, true);
+  var samples = SampleFloat32x4.toListFromString(
+    ['0,0=0', '1,0=1', '0,1=1', '1,1=0'],
+    scale,
+    true,
+  );
 
-  var samplesSet =
-      SamplesSet(samples, subject: 'xor[${activationFunction.name}]');
+  var samplesSet = SamplesSet(
+    samples,
+    subject: 'xor[${activationFunction.name}]',
+  );
 
   var ann = ANN(
-      scale,
-      LayerFloat32x4(2, true, ActivationFunctionLinear()),
-      [HiddenLayerConfig(3, true, activationFunction)],
-      LayerFloat32x4(1, false, activationFunction));
+    scale,
+    LayerFloat32x4(2, true, ActivationFunctionLinear()),
+    [HiddenLayerConfig(3, true, activationFunction)],
+    LayerFloat32x4(1, false, activationFunction),
+  );
 
   print(ann);
 

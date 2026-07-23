@@ -15,22 +15,12 @@ extension Int32x4Extension on Int32x4 {
 
   /// Filter each value with [mapper] and return a [Int32x4].
   Int32x4 filterValues(int Function(int e) mapper) {
-    return Int32x4(
-      mapper(x),
-      mapper(y),
-      mapper(z),
-      mapper(w),
-    );
+    return Int32x4(mapper(x), mapper(y), mapper(z), mapper(w));
   }
 
   /// Filter each value with [mapper] and return a [Float32x4].
   Float32x4 filterToDoubleValues(double Function(int e) mapper) {
-    return Float32x4(
-      mapper(x),
-      mapper(y),
-      mapper(z),
-      mapper(w),
-    );
+    return Float32x4(mapper(x), mapper(y), mapper(z), mapper(w));
   }
 
   /// Map using [mapper].
@@ -39,19 +29,11 @@ extension Int32x4Extension on Int32x4 {
   /// Returns values as `List<int>`.
   List<int> toInts() => <int>[x, y, z, w];
 
-  Int32x4 operator *(Int32x4 other) => Int32x4(
-        x * other.x,
-        y * other.y,
-        z * other.z,
-        w * other.w,
-      );
+  Int32x4 operator *(Int32x4 other) =>
+      Int32x4(x * other.x, y * other.y, z * other.z, w * other.w);
 
-  Int32x4 operator ~/(Int32x4 other) => Int32x4(
-        x ~/ other.x,
-        y ~/ other.y,
-        z ~/ other.z,
-        w ~/ other.w,
-      );
+  Int32x4 operator ~/(Int32x4 other) =>
+      Int32x4(x ~/ other.x, y ~/ other.y, z ~/ other.z, w ~/ other.w);
 
   /// Returns the minimal lane value.
   int get minInLane {
@@ -121,30 +103,24 @@ extension Float32x4Extension on Float32x4 {
   Int32x4 toInt32x4() => Int32x4(x.toInt(), y.toInt(), z.toInt(), w.toInt());
 
   /// Perform a `toInt()` in each value and return a [Float32x4].
-  Float32x4 toIntAsFloat32x4() => Float32x4(x.toInt().toDouble(),
-      y.toInt().toDouble(), z.toInt().toDouble(), w.toInt().toDouble());
+  Float32x4 toIntAsFloat32x4() => Float32x4(
+    x.toInt().toDouble(),
+    y.toInt().toDouble(),
+    z.toInt().toDouble(),
+    w.toInt().toDouble(),
+  );
 
   /// Filter this with [mapper].
   Float32x4 filter(Float32x4 Function(Float32x4 e) filter) => filter(this);
 
   /// Filter each value with [mapper] and return a [Float32x4].
   Float32x4 filterValues(double Function(double e) mapper) {
-    return Float32x4(
-      mapper(x),
-      mapper(y),
-      mapper(z),
-      mapper(w),
-    );
+    return Float32x4(mapper(x), mapper(y), mapper(z), mapper(w));
   }
 
   /// Filter each value with [mapper] and return a [Int32x4].
   Int32x4 filterToIntValues(int Function(double e) mapper) {
-    return Int32x4(
-      mapper(x),
-      mapper(y),
-      mapper(z),
-      mapper(w),
-    );
+    return Int32x4(mapper(x), mapper(y), mapper(z), mapper(w));
   }
 
   /// Map using [mapper].
@@ -264,8 +240,11 @@ extension ListExtension<T> on List<T> {
     return ListEquality<T>().hash(this);
   }
 
-  int ensureMaximumSize(int maximumSize,
-      {bool removeFromEnd = false, int removeExtras = 0}) {
+  int ensureMaximumSize(
+    int maximumSize, {
+    bool removeFromEnd = false,
+    int removeExtras = 0,
+  }) {
     var toRemove = length - maximumSize;
     if (toRemove <= 0) return 0;
 

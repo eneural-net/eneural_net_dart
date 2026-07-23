@@ -15,8 +15,11 @@ void main() {
         var e1 = exp(v);
         var e2 = fast_math.exp(v);
         var error = e1 - e2;
-        expect(error.abs() < 2.0e-12, isTrue,
-            reason: '$v -> $e1 - $e2 = $error');
+        expect(
+          error.abs() < 2.0e-12,
+          isTrue,
+          reason: '$v -> $e1 - $e2 = $error',
+        );
       }
     });
 
@@ -41,8 +44,11 @@ void main() {
         var ex4 = fast_math.expFloat32x4(vx4);
 
         var error = e - ex4;
-        expect(error.abs().maxInLane < 0.01, isTrue,
-            reason: '$vx4 -> $e - $ex4 = $error');
+        expect(
+          error.abs().maxInLane < 0.01,
+          isTrue,
+          reason: '$vx4 -> $e - $ex4 = $error',
+        );
       }
     });
 

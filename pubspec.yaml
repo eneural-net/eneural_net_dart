@@ -1,17 +1,17 @@
 name: eneural_net
 description: AI Library to create efficient Artificial Neural Networks. Computation uses SIMD (Single Instruction Multiple Data) to improve performance.
-version: 1.2.0
+version: 1.3.0
 homepage: https://eneural.net/
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
 
 dependencies:
-  collection: ^1.17.2
-  swiss_knife: ^3.1.5
+  collection: ^1.19.1
+  swiss_knife: ^3.1.6
   intl: ^0.18.1
 
 dev_dependencies:
   lints: ^2.1.1
-  test: ^1.24.6
+  test: ^1.31.2
   dependency_validator: ^3.2.3

@@ -11,22 +11,33 @@ import 'eneural_net_tools.dart';
 class SampleInt32x4 extends Sample<int, Int32x4, SignalInt32x4, Scale<int>> {
   // ignore: non_constant_identifier_names
   static final SampleInt32x4 DUMMY = SampleInt32x4.normalized(
-      SignalInt32x4.from([0]), SignalInt32x4.from([0]), ScaleInt.ZERO_TO_ONE);
+    SignalInt32x4.from([0]),
+    SignalInt32x4.from([0]),
+    ScaleInt.ZERO_TO_ONE,
+  );
 
   static List<SampleInt32x4> toList(
-      List<List<List<int>>> pairs, Scale<int> scale) {
+    List<List<List<int>>> pairs,
+    Scale<int> scale,
+  ) {
     return pairs.map((p) => SampleInt32x4.from(p[0], p[1], scale)).toList();
   }
 
   static List<SampleInt32x4> toListFromString(
-      List<String> pairs, Scale<int> scale, bool normalized) {
+    List<String> pairs,
+    Scale<int> scale,
+    bool normalized,
+  ) {
     return pairs
         .map((p) => SampleInt32x4.fromString(p, scale, normalized))
         .toList();
   }
 
   factory SampleInt32x4.fromString(
-      String s, Scale<int> scale, bool normalized) {
+    String s,
+    Scale<int> scale,
+    bool normalized,
+  ) {
     var inOut = s.split(Sample.REGEXP_IN_OUT_DELIMITER);
     var input = inOut[0]
         .split(Sample.REGEXP_VALUE_DELIMITER)
@@ -42,26 +53,43 @@ class SampleInt32x4 extends Sample<int, Int32x4, SignalInt32x4, Scale<int>> {
   }
 
   SampleInt32x4.normalized(
-      SignalInt32x4 input, SignalInt32x4 output, Scale<int> scale)
-      : super.normalized(input, output, scale);
+    SignalInt32x4 input,
+    SignalInt32x4 output,
+    Scale<int> scale,
+  ) : super.normalized(input, output, scale);
 
   factory SampleInt32x4.fromNormalized(
-          List<int> input, List<int> output, Scale<int> scale) =>
-      SampleInt32x4.normalized(
-          SignalInt32x4.from(input), SignalInt32x4.from(output), scale);
+    List<int> input,
+    List<int> output,
+    Scale<int> scale,
+  ) => SampleInt32x4.normalized(
+    SignalInt32x4.from(input),
+    SignalInt32x4.from(output),
+    scale,
+  );
 
   factory SampleInt32x4(
-      SignalInt32x4 input, SignalInt32x4 output, Scale<int> scale) {
-    return SampleInt32x4.normalized(DUMMY.normalizeWithScale(input, scale),
-        DUMMY.normalizeWithScale(output, scale), scale);
+    SignalInt32x4 input,
+    SignalInt32x4 output,
+    Scale<int> scale,
+  ) {
+    return SampleInt32x4.normalized(
+      DUMMY.normalizeWithScale(input, scale),
+      DUMMY.normalizeWithScale(output, scale),
+      scale,
+    );
   }
 
   factory SampleInt32x4.from(
-      List<int> input, List<int> output, Scale<int> scale) {
+    List<int> input,
+    List<int> output,
+    Scale<int> scale,
+  ) {
     return SampleInt32x4.normalized(
-        DUMMY.normalizeWithScale(SignalInt32x4.from(input), scale),
-        DUMMY.normalizeWithScale(SignalInt32x4.from(output), scale),
-        scale);
+      DUMMY.normalizeWithScale(SignalInt32x4.from(input), scale),
+      DUMMY.normalizeWithScale(SignalInt32x4.from(output), scale),
+      scale,
+    );
   }
 }
 
@@ -70,24 +98,33 @@ class SampleFloat32x4
     extends Sample<double, Float32x4, SignalFloat32x4, Scale<double>> {
   // ignore: non_constant_identifier_names
   static final SampleFloat32x4 DUMMY = SampleFloat32x4.normalized(
-      SignalFloat32x4.from([0]),
-      SignalFloat32x4.from([0]),
-      ScaleDouble.ZERO_TO_ONE);
+    SignalFloat32x4.from([0]),
+    SignalFloat32x4.from([0]),
+    ScaleDouble.ZERO_TO_ONE,
+  );
 
   static List<SampleFloat32x4> toList(
-      List<List<List<double>>> pairs, Scale<double> scale) {
+    List<List<List<double>>> pairs,
+    Scale<double> scale,
+  ) {
     return pairs.map((p) => SampleFloat32x4.from(p[0], p[1], scale)).toList();
   }
 
   static List<SampleFloat32x4> toListFromString(
-      List<String> pairs, Scale<double> scale, bool normalized) {
+    List<String> pairs,
+    Scale<double> scale,
+    bool normalized,
+  ) {
     return pairs
         .map((p) => SampleFloat32x4.fromString(p, scale, normalized))
         .toList();
   }
 
   factory SampleFloat32x4.fromString(
-      String s, Scale<double> scale, bool normalized) {
+    String s,
+    Scale<double> scale,
+    bool normalized,
+  ) {
     var inOut = s.split(Sample.REGEXP_IN_OUT_DELIMITER);
     var input = inOut[0]
         .split(Sample.REGEXP_VALUE_DELIMITER)
@@ -103,35 +140,56 @@ class SampleFloat32x4
   }
 
   SampleFloat32x4.normalized(
-      SignalFloat32x4 input, SignalFloat32x4 output, Scale<double> scale)
-      : super.normalized(input, output, scale);
+    SignalFloat32x4 input,
+    SignalFloat32x4 output,
+    Scale<double> scale,
+  ) : super.normalized(input, output, scale);
 
   factory SampleFloat32x4.fromNormalized(
-          List<double> input, List<double> output, Scale<double> scale) =>
-      SampleFloat32x4.normalized(
-          SignalFloat32x4.from(input), SignalFloat32x4.from(output), scale);
+    List<double> input,
+    List<double> output,
+    Scale<double> scale,
+  ) => SampleFloat32x4.normalized(
+    SignalFloat32x4.from(input),
+    SignalFloat32x4.from(output),
+    scale,
+  );
 
   factory SampleFloat32x4(
-      SignalFloat32x4 input, SignalFloat32x4 output, Scale<double> scale) {
-    return SampleFloat32x4.normalized(DUMMY.normalizeWithScale(input, scale),
-        DUMMY.normalizeWithScale(output, scale), scale);
+    SignalFloat32x4 input,
+    SignalFloat32x4 output,
+    Scale<double> scale,
+  ) {
+    return SampleFloat32x4.normalized(
+      DUMMY.normalizeWithScale(input, scale),
+      DUMMY.normalizeWithScale(output, scale),
+      scale,
+    );
   }
 
   factory SampleFloat32x4.from(
-      List<double> input, List<double> output, Scale<double> scale) {
+    List<double> input,
+    List<double> output,
+    Scale<double> scale,
+  ) {
     return SampleFloat32x4.normalized(
-        DUMMY.normalizeWithScale(SignalFloat32x4.from(input), scale),
-        DUMMY.normalizeWithScale(SignalFloat32x4.from(output), scale),
-        scale);
+      DUMMY.normalizeWithScale(SignalFloat32x4.from(input), scale),
+      DUMMY.normalizeWithScale(SignalFloat32x4.from(output), scale),
+      scale,
+    );
   }
 }
 
 /// Base class for [ANN] samples.
-abstract class Sample<N extends num, E, T extends Signal<N, E, T>,
-    S extends Scale<N>> {
+abstract class Sample<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>
+> {
   // ignore: non_constant_identifier_names
   static final RegExp REGEXP_IN_OUT_DELIMITER = RegExp(r'\s*=\s*');
-// ignore: non_constant_identifier_names
+  // ignore: non_constant_identifier_names
   static final RegExp REGEXP_VALUE_DELIMITER = RegExp(r'\s*[,;]\s*');
 
   /// Input values.
@@ -164,7 +222,8 @@ abstract class Sample<N extends num, E, T extends Signal<N, E, T>,
   DataStatistics outputStatistics() => output.statistics;
 
   DataStatistics inputProximityStatistics<P extends Sample<N, E, T, S>>(
-      P other) {
+    P other,
+  ) {
     var values1 = input.values;
     var values2 = other.input.values;
     var diff = values1 - values2;
@@ -172,7 +231,8 @@ abstract class Sample<N extends num, E, T extends Signal<N, E, T>,
   }
 
   DataStatistics outputProximityStatistics<P extends Sample<N, E, T, S>>(
-      P other) {
+    P other,
+  ) {
     var values1 = output.values;
     var values2 = other.output.values;
     var diff = values1 - values2;
@@ -224,10 +284,12 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
 
   final List<P> samples;
 
-  SamplesSet(this.samples,
-      {this.subject = '',
-      this.inputTolerance = 0.01,
-      this.outputTolerance = 0.01});
+  SamplesSet(
+    this.samples, {
+    this.subject = '',
+    this.inputTolerance = 0.01,
+    this.outputTolerance = 0.01,
+  });
 
   /// Input length.
   int get inputLength => samples.first.input.length;
@@ -277,7 +339,8 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
   Map<P, double> outputsSignalLevels([List<P>? samples]) {
     samples ??= this.samples;
     return Map.fromEntries(
-        samples.map((s) => MapEntry(s, s.outputSignalLevel)));
+      samples.map((s) => MapEntry(s, s.outputSignalLevel)),
+    );
   }
 
   List<P> samplesSortedByInput() {
@@ -298,18 +361,25 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
 
   /// Computes the samples inputs groups.
   List<Set<P>> samplesInputsGroups({double? tolerance}) =>
-      samplesSimilarityGroups((s1, s2) => s1.inputProximityStatistics(s2).mean,
-          tolerance: tolerance ?? inputTolerance,
-          samples: samplesSortedByInput());
+      samplesSimilarityGroups(
+        (s1, s2) => s1.inputProximityStatistics(s2).mean,
+        tolerance: tolerance ?? inputTolerance,
+        samples: samplesSortedByInput(),
+      );
 
   /// Computes the samples outputs groups.
   List<Set<P>> samplesOutputsGroups({double? tolerance}) =>
-      samplesSimilarityGroups((s1, s2) => s1.outputProximityStatistics(s2).mean,
-          tolerance: tolerance ?? outputTolerance,
-          samples: samplesSortedByOutput());
+      samplesSimilarityGroups(
+        (s1, s2) => s1.outputProximityStatistics(s2).mean,
+        tolerance: tolerance ?? outputTolerance,
+        samples: samplesSortedByOutput(),
+      );
 
-  List<Set<P>> samplesSimilarityGroups(double Function(P s1, P s2) proximity,
-      {double? tolerance, List<P>? samples}) {
+  List<Set<P>> samplesSimilarityGroups(
+    double Function(P s1, P s2) proximity, {
+    double? tolerance,
+    List<P>? samples,
+  }) {
     tolerance ??= inputTolerance;
     samples ??= this.samples;
 
@@ -372,16 +442,21 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
   }
 
   /// Compute all samples with conflicts.
-  List<Map<int, List<P>>> computeConflicts(
-      {double? inputTolerance, double? outputTolerance}) {
+  List<Map<int, List<P>>> computeConflicts({
+    double? inputTolerance,
+    double? outputTolerance,
+  }) {
     return _computeConflictsImpl(
-        inputTolerance: inputTolerance, outputTolerance: outputTolerance);
+      inputTolerance: inputTolerance,
+      outputTolerance: outputTolerance,
+    );
   }
 
-  List<Map<int, List<P>>> _computeConflictsImpl(
-      {double? inputTolerance,
-      double? outputTolerance,
-      List<Set<P>>? outputsGroups}) {
+  List<Map<int, List<P>>> _computeConflictsImpl({
+    double? inputTolerance,
+    double? outputTolerance,
+    List<Set<P>>? outputsGroups,
+  }) {
     var inputsGroups = samplesInputsGroups(tolerance: inputTolerance);
     outputsGroups ??= samplesOutputsGroups(tolerance: outputTolerance);
 
@@ -400,15 +475,18 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
   }
 
   /// Computs samples with conflicts that should be removed.
-  List<P> computeConflictsToRemove(
-      {double? inputTolerance, double? outputTolerance}) {
+  List<P> computeConflictsToRemove({
+    double? inputTolerance,
+    double? outputTolerance,
+  }) {
     var outputsGroups = samplesOutputsGroups(tolerance: outputTolerance);
     if (outputsGroups.length <= 1) return <P>[];
 
     var conflicts = _computeConflictsImpl(
-        inputTolerance: inputTolerance,
-        outputTolerance: outputTolerance,
-        outputsGroups: outputsGroups);
+      inputTolerance: inputTolerance,
+      outputTolerance: outputTolerance,
+      outputsGroups: outputsGroups,
+    );
 
     var outputsGroupsSizes = outputsGroups.map((g) => g.length).toList();
 
@@ -416,7 +494,8 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
     for (var outputGroups in conflicts) {
       var groupsIdx = outputGroups.keys.toList();
       groupsIdx.sort(
-          (a, b) => outputsGroupsSizes[a].compareTo(outputsGroupsSizes[b]));
+        (a, b) => outputsGroupsSizes[a].compareTo(outputsGroupsSizes[b]),
+      );
 
       var limit = groupsIdx.length - 1;
       for (var gIdx = 0; gIdx < limit; ++gIdx) {
@@ -431,7 +510,9 @@ class SamplesSet<P extends Sample<num, dynamic, dynamic, Scale<num>>> {
   /// Removes samples with conflict (similar inputs with different output group).
   List<P> removeConflicts({double? inputTolerance, double? outputTolerance}) {
     var toRemove = computeConflictsToRemove(
-        inputTolerance: inputTolerance, outputTolerance: outputTolerance);
+      inputTolerance: inputTolerance,
+      outputTolerance: outputTolerance,
+    );
 
     if (toRemove.isNotEmpty) {
       samples.removeWhere((e) => toRemove.contains(e));
@@ -455,9 +536,12 @@ class SamplesGenerator {
   /// Number of samples to generate.
   int length;
 
-  SamplesGenerator(this.inputScale, this.f, this.length,
-      [ScaleDouble? outputScale])
-      : outputScale = outputScale ?? ScaleDouble.ZERO_TO_ONE;
+  SamplesGenerator(
+    this.inputScale,
+    this.f,
+    this.length, [
+    ScaleDouble? outputScale,
+  ]) : outputScale = outputScale ?? ScaleDouble.ZERO_TO_ONE;
 
   List<SampleFloat32x4> generateSamples({int stepSize = 1}) {
     if (stepSize < 1) stepSize = 1;

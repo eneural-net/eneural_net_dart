@@ -20,26 +20,33 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   late final List<Layer<N, E, T, S>> allLayers;
 
-  ANN(this.scale, Layer<N, E, T, S> inputLayer,
-      List<HiddenLayerConfig> hiddenLayersConfig, Layer<N, E, T, S> outputLayer,
-      {Random? random})
-      : inputLayer = inputLayer.asLayerInput,
-        outputLayer = outputLayer.asLayerOutput {
+  ANN(
+    this.scale,
+    Layer<N, E, T, S> inputLayer,
+    List<HiddenLayerConfig> hiddenLayersConfig,
+    Layer<N, E, T, S> outputLayer, {
+    Random? random,
+  }) : inputLayer = inputLayer.asLayerInput,
+       outputLayer = outputLayer.asLayerOutput {
     _build(hiddenLayersConfig, null, random);
   }
 
-  ANN._(this.scale, Layer<N, E, T, S> inputLayer,
-      Iterable<Layer<N, E, T, S>> hiddenLayers, Layer<N, E, T, S> outputLayer,
-      {Random? random})
-      : inputLayer = inputLayer.asLayerInput,
-        outputLayer = outputLayer.asLayerOutput {
+  ANN._(
+    this.scale,
+    Layer<N, E, T, S> inputLayer,
+    Iterable<Layer<N, E, T, S>> hiddenLayers,
+    Layer<N, E, T, S> outputLayer, {
+    Random? random,
+  }) : inputLayer = inputLayer.asLayerInput,
+       outputLayer = outputLayer.asLayerOutput {
     _build(null, hiddenLayers, random);
   }
 
-  void _build(
-      [List<HiddenLayerConfig>? hiddenLayersConfig,
-      Iterable<Layer<N, E, T, S>>? hiddenLayers,
-      Random? random]) {
+  void _build([
+    List<HiddenLayerConfig>? hiddenLayersConfig,
+    Iterable<Layer<N, E, T, S>>? hiddenLayers,
+    Random? random,
+  ]) {
     if (outputLayer.withBiasNeuron) {
       throw StateError("Can't have bias neuron at output layer: $outputLayer");
     }
@@ -49,10 +56,12 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
       this.hiddenLayers = hiddenLayersConfig.map((l) {
         return LayerHidden<N, E, T, S>._(
-            inputLayer.neurons
-                .createInstance((l.withBiasNeuron ? l.neurons + 1 : l.neurons)),
-            l.withBiasNeuron,
-            l.getActivationFunction(defaultActivationFunction));
+          inputLayer.neurons.createInstance(
+            (l.withBiasNeuron ? l.neurons + 1 : l.neurons),
+          ),
+          l.withBiasNeuron,
+          l.getActivationFunction(defaultActivationFunction),
+        );
       }).toList();
     } else {
       this.hiddenLayers = hiddenLayers!.map((e) => e.asLayerHidden).toList();
@@ -183,7 +192,8 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   List<N> get outputDenormalized => outputLayer.getNeuronsDenormalized(scale);
 
   List<List<double>> computeSamplesActivations<P extends Sample<N, E, T, S>>(
-      List<P> samples) {
+    List<P> samples,
+  ) {
     return samples.map((s) {
       activate(s.input);
       return outputAsDouble;
@@ -192,7 +202,8 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   /// Computes the output errors for each sample in [samples].
   List<double> computeSamplesErrors<P extends Sample<N, E, T, S>>(
-      List<P> samples) {
+    List<P> samples,
+  ) {
     return samples.map((s) {
       activate(s.input);
       var outputErrors = outputAsDouble.diffFromSignal(s.output);
@@ -203,8 +214,8 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   /// Computes the global error for [samples].
   double computeSamplesGlobalError<P extends Sample<N, E, T, S>>(
-          List<P> samples) =>
-      computeSamplesErrors(samples).mean;
+    List<P> samples,
+  ) => computeSamplesErrors(samples).mean;
 
   @override
   String toString() {
@@ -228,10 +239,10 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   /// Converts this ANN to a JSON [Map].
   Map<String, dynamic> toJsonMap() => <String, dynamic>{
-        'format': format,
-        'scale': scale.toJsonMap(),
-        'layers': allLayers.map((e) => e.toJsonMap()).toList()
-      };
+    'format': format,
+    'scale': scale.toJsonMap(),
+    'layers': allLayers.map((e) => e.toJsonMap()).toList(),
+  };
 
   static ANN fromJson(dynamic json) {
     Map<String, dynamic> jsonMap = json is String ? parseJSON(json) : json;
@@ -250,11 +261,20 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           return ANN<double, Float32x4, SignalFloat32x4, Scale<double>>._(
             scale as Scale<double>,
             Layer<double, Float32x4, SignalFloat32x4, Scale<double>>.fromJson(
-                inputLayer),
-            hiddenLayers.map((e) => Layer<double, Float32x4, SignalFloat32x4,
-                Scale<double>>.fromJson(e)),
+              inputLayer,
+            ),
+            hiddenLayers.map(
+              (e) =>
+                  Layer<
+                    double,
+                    Float32x4,
+                    SignalFloat32x4,
+                    Scale<double>
+                  >.fromJson(e),
+            ),
             Layer<double, Float32x4, SignalFloat32x4, Scale<double>>.fromJson(
-                outputLayer),
+              outputLayer,
+            ),
           );
         }
       case 'Int32x4':
@@ -262,10 +282,12 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           return ANN<int, Int32x4, SignalInt32x4, Scale<int>>._(
             scale as Scale<int>,
             Layer<int, Int32x4, SignalInt32x4, Scale<int>>.fromJson(inputLayer),
-            hiddenLayers.map((e) =>
-                Layer<int, Int32x4, SignalInt32x4, Scale<int>>.fromJson(e)),
+            hiddenLayers.map(
+              (e) => Layer<int, Int32x4, SignalInt32x4, Scale<int>>.fromJson(e),
+            ),
             Layer<int, Int32x4, SignalInt32x4, Scale<int>>.fromJson(
-                outputLayer),
+              outputLayer,
+            ),
           );
         }
       case 'Float32x4Mod4':
@@ -273,11 +295,20 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           return ANN<double, Float32x4, SignalFloat32x4, Scale<double>>._(
             scale as Scale<double>,
             Layer<double, Float32x4, SignalFloat32x4, Scale<double>>.fromJson(
-                inputLayer),
-            hiddenLayers.map((e) => Layer<double, Float32x4, SignalFloat32x4,
-                Scale<double>>.fromJson(e)),
+              inputLayer,
+            ),
+            hiddenLayers.map(
+              (e) =>
+                  Layer<
+                    double,
+                    Float32x4,
+                    SignalFloat32x4,
+                    Scale<double>
+                  >.fromJson(e),
+            ),
             Layer<double, Float32x4, SignalFloat32x4, Scale<double>>.fromJson(
-                outputLayer),
+              outputLayer,
+            ),
           );
         }
       default:
@@ -296,33 +327,46 @@ class HiddenLayerConfig<N extends num, E> {
   /// Activation function of the layer.
   final ActivationFunction<N, E>? activationFunction;
 
-  HiddenLayerConfig(this.neurons, this.withBiasNeuron,
-      [this.activationFunction]);
+  HiddenLayerConfig(
+    this.neurons,
+    this.withBiasNeuron, [
+    this.activationFunction,
+  ]);
 
   /// Returns the [activationFunction] or [def].
   ActivationFunction<A, B> getActivationFunction<A extends num, B>(
-          ActivationFunction<A, B> def) =>
-      (activationFunction as ActivationFunction<A, B>?) ?? def;
+    ActivationFunction<A, B> def,
+  ) => (activationFunction as ActivationFunction<A, B>?) ?? def;
 }
 
 /// ANN Layer for [Int32x4] types.
 ///
 /// (This is experimental computation layer).
 class LayerInt32x4 extends Layer<int, Int32x4, SignalInt32x4, Scale<int>> {
-  LayerInt32x4(int size, bool withBiasNeuron,
-      [ActivationFunction<int, Int32x4> activationFunction =
-          const ActivationFunctionSigmoidFastInt100()])
-      : super._(SignalInt32x4((withBiasNeuron ? size + 1 : size)),
-            withBiasNeuron, activationFunction);
+  LayerInt32x4(
+    int size,
+    bool withBiasNeuron, [
+    ActivationFunction<int, Int32x4> activationFunction =
+        const ActivationFunctionSigmoidFastInt100(),
+  ]) : super._(
+         SignalInt32x4((withBiasNeuron ? size + 1 : size)),
+         withBiasNeuron,
+         activationFunction,
+       );
 }
 
 /// [ANN] Layer for [Float32x4] types.
 class LayerFloat32x4
     extends Layer<double, Float32x4, SignalFloat32x4, Scale<double>> {
-  LayerFloat32x4(int size, bool withBiasNeuron,
-      [ActivationFunction<double, Float32x4>? activationFunction])
-      : super._(SignalFloat32x4((withBiasNeuron ? size + 1 : size)),
-            withBiasNeuron, activationFunction ?? ActivationFunctionSigmoid());
+  LayerFloat32x4(
+    int size,
+    bool withBiasNeuron, [
+    ActivationFunction<double, Float32x4>? activationFunction,
+  ]) : super._(
+         SignalFloat32x4((withBiasNeuron ? size + 1 : size)),
+         withBiasNeuron,
+         activationFunction ?? ActivationFunctionSigmoid(),
+       );
 }
 
 /// Base class for [ANN] layers.
@@ -353,24 +397,44 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   Layer<N, E, T, S>? get previousLayer => _previousLayer;
 
-  Layer._(this._neurons, this.withBiasNeuron, this.activationFunction,
-      [this._weightsValues]);
+  Layer._(
+    this._neurons,
+    this.withBiasNeuron,
+    this.activationFunction, [
+    this._weightsValues,
+  ]);
 
-  factory Layer._byType(String type, T neurons, bool withBiasNeuron,
-      ActivationFunction<N, E> activationFunction,
-      [List<T>? weightsValues]) {
+  factory Layer._byType(
+    String type,
+    T neurons,
+    bool withBiasNeuron,
+    ActivationFunction<N, E> activationFunction, [
+    List<T>? weightsValues,
+  ]) {
     switch (type) {
       case 'input':
         return LayerInput<N, E, T, S>._(
-            neurons, withBiasNeuron, activationFunction, weightsValues);
+          neurons,
+          withBiasNeuron,
+          activationFunction,
+          weightsValues,
+        );
       case 'hidden':
         return LayerHidden<N, E, T, S>._(
-            neurons, withBiasNeuron, activationFunction, weightsValues);
+          neurons,
+          withBiasNeuron,
+          activationFunction,
+          weightsValues,
+        );
       case 'output':
         return LayerOutput<N, E, T, S>._(neurons, activationFunction);
       default:
         return Layer<N, E, T, S>._(
-            neurons, withBiasNeuron, activationFunction, weightsValues);
+          neurons,
+          withBiasNeuron,
+          activationFunction,
+          weightsValues,
+        );
     }
   }
 
@@ -389,54 +453,93 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
     switch (format) {
       case 'Float32x4':
         {
-          var neurons = Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
-              format,
-              size: neuronsSize) as SignalFloat32x4;
+          var neurons =
+              Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
+                    format,
+                    size: neuronsSize,
+                  )
+                  as SignalFloat32x4;
 
           var weights = weightsValues
-              ?.map((e) =>
-                  Signal.fromFormat<double, Float32x4, SignalFloat32x4>(format,
-                      values: e.asDoubles()) as SignalFloat32x4)
+              ?.map(
+                (e) =>
+                    Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
+                          format,
+                          values: e.asDoubles(),
+                        )
+                        as SignalFloat32x4,
+              )
               .toList();
 
           var af = activationFunction as ActivationFunction<double, Float32x4>;
 
-          return Layer<double, Float32x4, SignalFloat32x4,
-                  Scale<double>>._byType(layerType, neurons, bias, af, weights)
+          return Layer<
+                double,
+                Float32x4,
+                SignalFloat32x4,
+                Scale<double>
+              >._byType(layerType, neurons, bias, af, weights)
               as Layer<N, E, T, S>;
         }
       case 'Int32x4':
         {
-          var neurons = Signal.fromFormat<int, Int32x4, SignalInt32x4>(format,
-              size: neuronsSize) as SignalInt32x4;
+          var neurons =
+              Signal.fromFormat<int, Int32x4, SignalInt32x4>(
+                    format,
+                    size: neuronsSize,
+                  )
+                  as SignalInt32x4;
 
           var weights = weightsValues
-              ?.map((e) => Signal.fromFormat<int, Int32x4, SignalInt32x4>(
-                  format,
-                  values: e.asInts()) as SignalInt32x4)
+              ?.map(
+                (e) =>
+                    Signal.fromFormat<int, Int32x4, SignalInt32x4>(
+                          format,
+                          values: e.asInts(),
+                        )
+                        as SignalInt32x4,
+              )
               .toList();
 
           var af = activationFunction as ActivationFunction<int, Int32x4>;
 
           return Layer<int, Int32x4, SignalInt32x4, Scale<int>>._byType(
-              layerType, neurons, bias, af, weights) as Layer<N, E, T, S>;
+                layerType,
+                neurons,
+                bias,
+                af,
+                weights,
+              )
+              as Layer<N, E, T, S>;
         }
       case 'Float32x4Mod4':
         {
-          var neurons = Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
-              format,
-              size: neuronsSize) as SignalFloat32x4Mod4;
+          var neurons =
+              Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
+                    format,
+                    size: neuronsSize,
+                  )
+                  as SignalFloat32x4Mod4;
 
           var weights = weightsValues
-              ?.map((e) =>
-                  Signal.fromFormat<double, Float32x4, SignalFloat32x4>(format,
-                      values: e.asDoubles()) as SignalFloat32x4Mod4)
+              ?.map(
+                (e) =>
+                    Signal.fromFormat<double, Float32x4, SignalFloat32x4>(
+                          format,
+                          values: e.asDoubles(),
+                        )
+                        as SignalFloat32x4Mod4,
+              )
               .toList();
 
           var af = activationFunction as ActivationFunction<double, Float32x4>;
 
-          return Layer<double, Float32x4, SignalFloat32x4,
-                  Scale<double>>._byType(layerType, neurons, bias, af, weights)
+          return Layer<
+                double,
+                Float32x4,
+                SignalFloat32x4,
+                Scale<double>
+              >._byType(layerType, neurons, bias, af, weights)
               as Layer<N, E, T, S>;
         }
       default:
@@ -459,7 +562,8 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
       'neurons': neurons.length,
       'bias': withBiasNeuron,
       'activation': activationFunction.toJsonMap(),
-      if (this is! LayerOutput) 'weights': weights.map((e) => e.values).toList()
+      if (this is! LayerOutput)
+        'weights': weights.map((e) => e.values).toList(),
     };
   }
 
@@ -471,14 +575,18 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   List<T>? _weightsValues;
 
-  void connectTo(Layer<N, E, T, S> nextLayer,
-      {Random? random, List<T>? weights}) {
+  void connectTo(
+    Layer<N, E, T, S> nextLayer, {
+    Random? random,
+    List<T>? weights,
+  }) {
     var inSize = _neurons.length;
     var outSize = nextLayer._neurons.length;
 
     var biasNeuronIndex = withBiasNeuron ? inSize - 1 : -1;
-    var weightBiasValue =
-        _neurons.toN(activationFunction.initialWeightBiasValue);
+    var weightBiasValue = _neurons.toN(
+      activationFunction.initialWeightBiasValue,
+    );
 
     if (weights == null && _weightsValues != null) {
       weights = _weightsValues;
@@ -489,23 +597,30 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
       _weights = weights;
       if (_weights.length != inSize) {
         throw StateError(
-            'Invalid weights length: ${_weights.length} != $inSize');
+          'Invalid weights length: ${_weights.length} != $inSize',
+        );
       }
 
       if (_weights.where((e) => e.length != outSize).isNotEmpty) {
         throw StateError(
-            'Invalid weights entries length: ${_weights.map((e) => e.length).toList()} != $outSize');
+          'Invalid weights entries length: ${_weights.map((e) => e.length).toList()} != $outSize',
+        );
       }
     } else {
       _weights = List.generate(inSize, (index) {
         T weightsToNeuron;
 
         if (biasNeuronIndex == index) {
-          weightsToNeuron =
-              neurons.createInstanceFullOfValue(outSize, weightBiasValue);
+          weightsToNeuron = neurons.createInstanceFullOfValue(
+            outSize,
+            weightBiasValue,
+          );
         } else {
-          weightsToNeuron = neurons.createRandomInstance(outSize,
-              neurons.toN(activationFunction.initialWeightScale), random);
+          weightsToNeuron = neurons.createRandomInstance(
+            outSize,
+            neurons.toN(activationFunction.initialWeightScale),
+            random,
+          );
         }
 
         weightsToNeuron.setExtraValues(neurons.zero);
@@ -535,7 +650,10 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
       for (var j = 0; j < weights.entriesLength; ++j) {
         weights.setEntryWithRandomValues(
-            j, weights.toN(initialWeightScale), rand);
+          j,
+          weights.toN(initialWeightScale),
+          rand,
+        );
       }
     }
   }
@@ -588,7 +706,8 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   void activateLayer() {
     throw UnsupportedError(
-        'Should use a LayerInput, LayerHidden or LayerOutput instance!');
+      'Should use a LayerInput, LayerHidden or LayerOutput instance!',
+    );
   }
 
   LayerInput<N, E, T, S> get asLayerInput =>
@@ -607,21 +726,31 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 }
 
 /// Layer specialized for input neurons.
-class LayerInput<N extends num, E, T extends Signal<N, E, T>,
-    S extends Scale<N>> extends Layer<N, E, T, S> {
+class LayerInput<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>
+>
+    extends Layer<N, E, T, S> {
   late final Layer<N, E, T, S> _nextLayerNonNull;
 
-  LayerInput._(T neurons, bool withBiasNeuron,
-      ActivationFunction<N, E> activationFunction,
-      [List<T>? weightsValues])
-      : super._(neurons, withBiasNeuron, activationFunction, weightsValues);
+  LayerInput._(
+    T neurons,
+    bool withBiasNeuron,
+    ActivationFunction<N, E> activationFunction, [
+    List<T>? weightsValues,
+  ]) : super._(neurons, withBiasNeuron, activationFunction, weightsValues);
 
   @override
   String get layerType => 'input';
 
   @override
-  void connectTo(Layer<N, E, T, S> nextLayer,
-      {Random? random, List<T>? weights}) {
+  void connectTo(
+    Layer<N, E, T, S> nextLayer, {
+    Random? random,
+    List<T>? weights,
+  }) {
     super.connectTo(nextLayer, random: random, weights: weights);
     _nextLayerNonNull = _nextLayer!;
   }
@@ -654,21 +783,31 @@ class LayerInput<N extends num, E, T extends Signal<N, E, T>,
 }
 
 /// Layer specialized for hidden neurons.
-class LayerHidden<N extends num, E, T extends Signal<N, E, T>,
-    S extends Scale<N>> extends Layer<N, E, T, S> {
+class LayerHidden<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>
+>
+    extends Layer<N, E, T, S> {
   late final Layer<N, E, T, S> _nextLayerNonNull;
 
-  LayerHidden._(T neurons, bool withBiasNeuron,
-      ActivationFunction<N, E> activationFunction,
-      [List<T>? weightsValues])
-      : super._(neurons, withBiasNeuron, activationFunction, weightsValues);
+  LayerHidden._(
+    T neurons,
+    bool withBiasNeuron,
+    ActivationFunction<N, E> activationFunction, [
+    List<T>? weightsValues,
+  ]) : super._(neurons, withBiasNeuron, activationFunction, weightsValues);
 
   @override
   String get layerType => 'hidden';
 
   @override
-  void connectTo(Layer<N, E, T, S> nextLayer,
-      {Random? random, List<T>? weights}) {
+  void connectTo(
+    Layer<N, E, T, S> nextLayer, {
+    Random? random,
+    List<T>? weights,
+  }) {
     super.connectTo(nextLayer, random: random, weights: weights);
     _nextLayerNonNull = _nextLayer!;
   }
@@ -714,10 +853,15 @@ class LayerHidden<N extends num, E, T extends Signal<N, E, T>,
 }
 
 /// Layer specialized for output neurons.
-class LayerOutput<N extends num, E, T extends Signal<N, E, T>,
-    S extends Scale<N>> extends Layer<N, E, T, S> {
+class LayerOutput<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>
+>
+    extends Layer<N, E, T, S> {
   LayerOutput._(T neurons, ActivationFunction<N, E> activationFunction)
-      : super._(neurons, false, activationFunction);
+    : super._(neurons, false, activationFunction);
 
   @override
   String get layerType => 'output';

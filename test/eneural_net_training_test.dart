@@ -4,12 +4,11 @@ import 'package:test/test.dart';
 
 void main() {
   var scaleDouble = ScaleDouble.ZERO_TO_ONE;
-  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString([
-    '0,0=0',
-    '0,1=1',
-    '1,0=1',
-    '1,1=0',
-  ], scaleDouble, true);
+  var samplesXorFloat32x4 = SampleFloat32x4.toListFromString(
+    ['0,0=0', '0,1=1', '1,0=1', '1,1=0'],
+    scaleDouble,
+    true,
+  );
 
   group('Training', () {
     setUp(() {
@@ -20,13 +19,16 @@ void main() {
       var activationFunction = ActivationFunctionSigmoid();
 
       var ann = ANN(
-          scaleDouble,
-          LayerFloat32x4(2, true, activationFunction),
-          [HiddenLayerConfig(3, true)],
-          LayerFloat32x4(1, false, activationFunction));
+        scaleDouble,
+        LayerFloat32x4(2, true, activationFunction),
+        [HiddenLayerConfig(3, true)],
+        LayerFloat32x4(1, false, activationFunction),
+      );
 
-      var training =
-          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
+      var training = Backpropagation(
+        ann,
+        SamplesSet(samplesXorFloat32x4, subject: 'xor'),
+      );
 
       _trainANN(ann, training);
     });
@@ -35,13 +37,16 @@ void main() {
       var activationFunction = ActivationFunctionSigmoid();
 
       var ann = ANN(
-          scaleDouble,
-          LayerFloat32x4(2, true, activationFunction),
-          [HiddenLayerConfig(3, true)],
-          LayerFloat32x4(1, false, activationFunction));
+        scaleDouble,
+        LayerFloat32x4(2, true, activationFunction),
+        [HiddenLayerConfig(3, true)],
+        LayerFloat32x4(1, false, activationFunction),
+      );
 
-      var training =
-          RProp(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
+      var training = RProp(
+        ann,
+        SamplesSet(samplesXorFloat32x4, subject: 'xor'),
+      );
 
       _trainANN(ann, training);
     });
@@ -50,13 +55,16 @@ void main() {
       var activationFunction = ActivationFunctionSigmoidFast();
 
       var ann = ANN(
-          scaleDouble,
-          LayerFloat32x4(2, true, activationFunction),
-          [HiddenLayerConfig(3, true)],
-          LayerFloat32x4(1, false, activationFunction));
+        scaleDouble,
+        LayerFloat32x4(2, true, activationFunction),
+        [HiddenLayerConfig(3, true)],
+        LayerFloat32x4(1, false, activationFunction),
+      );
 
-      var training =
-          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
+      var training = Backpropagation(
+        ann,
+        SamplesSet(samplesXorFloat32x4, subject: 'xor'),
+      );
 
       _trainANN(ann, training);
     });
@@ -65,30 +73,39 @@ void main() {
       var activationFunction = ActivationFunctionSigmoidBoundedFast();
 
       var ann = ANN(
-          scaleDouble,
-          LayerFloat32x4(2, true, activationFunction),
-          [HiddenLayerConfig(3, true)],
-          LayerFloat32x4(1, false, activationFunction));
+        scaleDouble,
+        LayerFloat32x4(2, true, activationFunction),
+        [HiddenLayerConfig(3, true)],
+        LayerFloat32x4(1, false, activationFunction),
+      );
 
-      var training =
-          Backpropagation(ann, SamplesSet(samplesXorFloat32x4, subject: 'xor'));
+      var training = Backpropagation(
+        ann,
+        SamplesSet(samplesXorFloat32x4, subject: 'xor'),
+      );
 
       _trainANN(ann, training);
     });
   });
 }
 
-void _trainANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>,
-        P extends Sample<N, E, T, S>>(
-    ANN<N, E, T, S> ann, Training<N, E, T, S, P> training) {
+void _trainANN<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+>(ANN<N, E, T, S> ann, Training<N, E, T, S, P> training) {
   print(ann);
 
   print('Train...');
 
   var chronometer = Chronometer(training.algorithmName).start();
 
-  var ok =
-      training.trainUntilGlobalError(targetGlobalError: 0.05, maxRetries: 10);
+  var ok = training.trainUntilGlobalError(
+    targetGlobalError: 0.05,
+    maxRetries: 10,
+  );
 
   chronometer.stop(operations: training.totalTrainingActivations);
 
@@ -108,7 +125,8 @@ void _trainANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>,
     var sampleError = sampleErrors.squaresMean;
 
     print(
-        '- ${sample.input.values} -> ${ann.output} (${sample.output.values}) ; error: $sampleError $sampleError');
+      '- ${sample.input.values} -> ${ann.output} (${sample.output.values}) ; error: $sampleError $sampleError',
+    );
 
     expect(sampleError < 0.20, isTrue);
   }
