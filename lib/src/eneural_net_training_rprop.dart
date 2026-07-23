@@ -7,15 +7,28 @@ import 'eneural_net_training_parameter_strategy.dart';
 import 'eneural_net_training_propagation.dart';
 
 /// Implementation of Resilient Backpropagation (version iRProp+).
-class RProp<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>,
-    P extends Sample<N, E, T, S>> extends Propagation<N, E, T, S, P> {
+class RProp<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+>
+    extends Propagation<N, E, T, S, P> {
   static const double weightMinStep = 1.0E-6;
   static const double weightMaxStep = 50.0;
 
-  RProp(ANN<N, E, T, S> ann, SamplesSet<P> samplesSet,
-      {String? subject, bool enableSelectInitialANN = false})
-      : super(ann, samplesSet,
-            algorithmName: 'iRProp+', subject: subject ?? samplesSet.subject) {
+  RProp(
+    ANN<N, E, T, S> ann,
+    SamplesSet<P> samplesSet, {
+    String? subject,
+    bool enableSelectInitialANN = false,
+  }) : super(
+         ann,
+         samplesSet,
+         algorithmName: 'iRProp+',
+         subject: subject ?? samplesSet.subject,
+       ) {
     this.enableSelectInitialANN = enableSelectInitialANN;
   }
 

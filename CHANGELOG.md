@@ -1,3 +1,12 @@
+## 1.3.0
+
+- Code reformatted with the new Dart formatter style (no behavior changes).
+
+- sdk: '>=3.10.0 <4.0.0'
+- collection: ^1.19.1
+- swiss_knife: ^3.1.6
+- test: ^1.31.2
+
 ## 1.2.0
 
 - Optimize & update Dart CI.

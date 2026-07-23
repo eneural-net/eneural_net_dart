@@ -30,20 +30,25 @@ abstract class ActivationFunction<N extends num, E> {
     switch (name) {
       case 'Linear':
         return ActivationFunctionLinear(
-                initialWeightScale: initialWeightScale ?? 1.0)
+              initialWeightScale: initialWeightScale ?? 1.0,
+            )
             as ActivationFunction<N, E>;
       case 'Sigmoid':
         return ActivationFunctionSigmoid(
-                initialWeightScale: initialWeightScale ?? 1.0)
+              initialWeightScale: initialWeightScale ?? 1.0,
+            )
             as ActivationFunction<N, E>;
       case 'SigmoidFast':
         return ActivationFunctionSigmoidFast(
-                initialWeightScale: initialWeightScale ?? 1.0)
+              initialWeightScale: initialWeightScale ?? 1.0,
+            )
             as ActivationFunction<N, E>;
       case 'SigmoidBoundedFast':
         return ActivationFunctionSigmoidBoundedFast(
-            initialWeightScale: initialWeightScale ?? 1.0,
-            scale: scale ?? 6.0) as ActivationFunction<N, E>;
+              initialWeightScale: initialWeightScale ?? 1.0,
+              scale: scale ?? 6.0,
+            )
+            as ActivationFunction<N, E>;
       default:
         throw StateError('Unknown ActivationFunction with name: $name');
     }
@@ -53,9 +58,11 @@ abstract class ActivationFunction<N extends num, E> {
   static ActivationFunction<N, E> fromJson<N extends num, E>(dynamic json) {
     Map<String, dynamic> jsonMap = json is String ? parseJSON(json) : json;
 
-    return byName(jsonMap['name'],
-        initialWeightScale: jsonMap['initialWeightScale'],
-        scale: jsonMap['scale']);
+    return byName(
+      jsonMap['name'],
+      initialWeightScale: jsonMap['initialWeightScale'],
+      scale: jsonMap['scale'],
+    );
   }
 
   // ignore: constant_identifier_names
@@ -68,8 +75,12 @@ abstract class ActivationFunction<N extends num, E> {
   final double initialWeightBiasValue;
   final double flatSpot;
 
-  const ActivationFunction(this.name, this.initialWeightScale,
-      {this.initialWeightBiasValue = 0.0, this.flatSpot = 0.0001});
+  const ActivationFunction(
+    this.name,
+    this.initialWeightScale, {
+    this.initialWeightBiasValue = 0.0,
+    this.flatSpot = 0.0001,
+  });
 
   /// Scopes where this activation function should be used.
   List<ActivationFunctionScope> get scope;
@@ -115,8 +126,10 @@ abstract class ActivationFunction<N extends num, E> {
       encodeJSON(toJsonMap(), withIndent: withIndent);
 
   /// Converts to a JSON [Map].
-  Map<String, dynamic> toJsonMap() =>
-      <String, dynamic>{'name': name, 'initialWeightScale': initialWeightScale};
+  Map<String, dynamic> toJsonMap() => <String, dynamic>{
+    'name': name,
+    'initialWeightScale': initialWeightScale,
+  };
 }
 
 /// Base class for SIMD optimized functions using [Float32x4].
@@ -132,11 +145,18 @@ abstract class ActivationFunctionFloat32x4
 
   final Float32x4 entryFlatSpot;
 
-  ActivationFunctionFloat32x4(String name, double initialWeightScale,
-      {double initialWeightBiasValue = 0.0, double flatSpot = 0.0001})
-      : entryFlatSpot = Float32x4(flatSpot, flatSpot, flatSpot, flatSpot),
-        super(name, initialWeightScale,
-            initialWeightBiasValue: initialWeightBiasValue, flatSpot: flatSpot);
+  ActivationFunctionFloat32x4(
+    String name,
+    double initialWeightScale, {
+    double initialWeightBiasValue = 0.0,
+    double flatSpot = 0.0001,
+  }) : entryFlatSpot = Float32x4(flatSpot, flatSpot, flatSpot, flatSpot),
+       super(
+         name,
+         initialWeightScale,
+         initialWeightBiasValue: initialWeightBiasValue,
+         flatSpot: flatSpot,
+       );
 }
 
 /// Linear Activation Function (SIMD optimized).
@@ -144,13 +164,14 @@ class ActivationFunctionLinear extends ActivationFunctionFloat32x4 {
   late final Float32x4 entryFlatSpotPlusOne;
 
   ActivationFunctionLinear({double initialWeightScale = 1})
-      : super('Linear', initialWeightScale) {
+    : super('Linear', initialWeightScale) {
     entryFlatSpotPlusOne =
         entryFlatSpot + ActivationFunctionFloat32x4.entryOfOnes;
   }
 
-  static final List<ActivationFunctionScope> _scope =
-      List.unmodifiable([ActivationFunctionScope.input]);
+  static final List<ActivationFunctionScope> _scope = List.unmodifiable([
+    ActivationFunctionScope.input,
+  ]);
 
   @override
   List<ActivationFunctionScope> get scope => _scope;
@@ -205,10 +226,12 @@ class ActivationFunctionLinear extends ActivationFunctionFloat32x4 {
 /// Sigmoid Activation Function (SIMD optimized).
 class ActivationFunctionSigmoid extends ActivationFunctionFloat32x4 {
   ActivationFunctionSigmoid({double initialWeightScale = 1})
-      : super('Sigmoid', initialWeightScale);
+    : super('Sigmoid', initialWeightScale);
 
-  static final List<ActivationFunctionScope> _scope = List.unmodifiable(
-      [ActivationFunctionScope.hidden, ActivationFunctionScope.output]);
+  static final List<ActivationFunctionScope> _scope = List.unmodifiable([
+    ActivationFunctionScope.hidden,
+    ActivationFunctionScope.output,
+  ]);
 
   @override
   List<ActivationFunctionScope> get scope => _scope;
@@ -292,7 +315,7 @@ class ActivationFunctionSigmoid extends ActivationFunctionFloat32x4 {
 /// Fast Pseudo-Sigmoid Activation Function (SIMD optimized).
 class ActivationFunctionSigmoidFast extends ActivationFunctionFloat32x4 {
   ActivationFunctionSigmoidFast({double initialWeightScale = 1})
-      : super('SigmoidFast', initialWeightScale);
+    : super('SigmoidFast', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
@@ -357,13 +380,14 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
 
   final double scale;
 
-  ActivationFunctionSigmoidBoundedFast(
-      {this.scale = 6, double initialWeightScale = 2})
-      : lowerLimit = -scale,
-        _entryLowerLimit = Float32x4.splat(-scale),
-        upperLimit = scale,
-        _entryUpperLimit = Float32x4.splat(scale),
-        super('SigmoidBoundedFast', initialWeightScale);
+  ActivationFunctionSigmoidBoundedFast({
+    this.scale = 6,
+    double initialWeightScale = 2,
+  }) : lowerLimit = -scale,
+       _entryLowerLimit = Float32x4.splat(-scale),
+       upperLimit = scale,
+       _entryUpperLimit = Float32x4.splat(scale),
+       super('SigmoidBoundedFast', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
@@ -429,7 +453,7 @@ class ActivationFunctionSigmoidBoundedFast extends ActivationFunctionFloat32x4 {
 class ActivationFunctionSigmoidFastInt100
     extends ActivationFunction<int, Int32x4> {
   const ActivationFunctionSigmoidFastInt100([double initialWeightScale = 10])
-      : super('SigmoidFastInt100', initialWeightScale);
+    : super('SigmoidFastInt100', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;
@@ -471,10 +495,11 @@ class ActivationFunctionSigmoidFastInt
   final int scaleCenter;
   final int scaleMax;
 
-  const ActivationFunctionSigmoidFastInt(this.scaleMax,
-      [double initialWeightScale = 10])
-      : scaleCenter = scaleMax ~/ 2,
-        super('SigmoidFastInt', initialWeightScale);
+  const ActivationFunctionSigmoidFastInt(
+    this.scaleMax, [
+    double initialWeightScale = 10,
+  ]) : scaleCenter = scaleMax ~/ 2,
+       super('SigmoidFastInt', initialWeightScale);
 
   @override
   List<ActivationFunctionScope> get scope => ActivationFunctionSigmoid._scope;

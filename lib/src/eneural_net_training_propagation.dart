@@ -6,11 +6,13 @@ import 'eneural_net_training_parameter_strategy.dart';
 
 /// Base class for propagation training algorithms (similar to Backpropagation).
 abstract class Propagation<
-    N extends num,
-    E,
-    T extends Signal<N, E, T>,
-    S extends Scale<N>,
-    P extends Sample<N, E, T, S>> extends Training<N, E, T, S, P> {
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+>
+    extends Training<N, E, T, S, P> {
   late final T _signalInstance;
 
   T get signalInstance => _signalInstance;
@@ -43,21 +45,27 @@ abstract class Propagation<
     _layersPreviousUpdateDelta = ann.allLayers.map((l) {
       if (!l.hasNextLayer) return <T>[];
       return List.generate(
-          l.weights.length,
-          (i) => l.weights[i]
-              .createInstanceOfSameLengthFullOfValue(l.neurons.toN(0.10)));
+        l.weights.length,
+        (i) => l.weights[i].createInstanceOfSameLengthFullOfValue(
+          l.neurons.toN(0.10),
+        ),
+      );
     }).toList();
 
     _layersNoImprovementCounter = ann.allLayers.map((l) {
       if (!l.hasNextLayer) return <T>[];
       return List.generate(
-          l.weights.length, (i) => l.weights[i].createInstanceOfSameLength());
+        l.weights.length,
+        (i) => l.weights[i].createInstanceOfSameLength(),
+      );
     }).toList();
 
     _layersWeightsLastUpdates = ann.allLayers.map((l) {
       if (!l.hasNextLayer) return <T>[];
       return List.generate(
-          l.weights.length, (i) => l.weights[i].createInstanceOfSameLength());
+        l.weights.length,
+        (i) => l.weights[i].createInstanceOfSameLength(),
+      );
     }).toList();
 
     _signalInstance = _layersGradientsDeltas.first.createInstance(1);
@@ -86,7 +94,11 @@ abstract class Propagation<
       (_random.nextDouble() * (range * 2)) - range;
 
   double generateRandomWeightUpdate(
-      double range, double min, double max, double multiplier) {
+    double range,
+    double min,
+    double max,
+    double multiplier,
+  ) {
     var wUpdate = generateRandomValue(range);
     wUpdate = wUpdate * multiplier;
     if (wUpdate < 0) {
@@ -97,8 +109,12 @@ abstract class Propagation<
     return wUpdate;
   }
 
-  double generateRandomWeightUpdateByFactor(double weight, double factor,
-      {double zeroPoint = 0.01, double multiplier = 1.0}) {
+  double generateRandomWeightUpdateByFactor(
+    double weight,
+    double factor, {
+    double zeroPoint = 0.01,
+    double multiplier = 1.0,
+  }) {
     var weightUpdateRatio = zeroPoint + generateRandomValuePositive(factor);
     var w = weight.toDouble();
     var w2 = (w * weightUpdateRatio * multiplier).clamp(-1.0E20, 1.0E20);
@@ -283,23 +299,32 @@ abstract class Propagation<
 
       var neuronError = 0.0;
 
-      for (var nextNeuronEntryI = nextEntriesLastIndex;
-          nextNeuronEntryI >= 0;
-          --nextNeuronEntryI) {
+      for (
+        var nextNeuronEntryI = nextEntriesLastIndex;
+        nextNeuronEntryI >= 0;
+        --nextNeuronEntryI
+      ) {
         var weightsEntry = neuronWeights.getEntry(nextNeuronEntryI);
-        var nextNeuronGradientDeltaEntry =
-            nextGradientsDeltas.getEntry(nextNeuronEntryI);
+        var nextNeuronGradientDeltaEntry = nextGradientsDeltas.getEntry(
+          nextNeuronEntryI,
+        );
 
         var weightGradient = neuronWeights.entryOperationMultiply(
-            neuronOutputEntry, nextNeuronGradientDeltaEntry);
+          neuronOutputEntry,
+          nextNeuronGradientDeltaEntry,
+        );
         neuronGradients.addToEntry(nextNeuronEntryI, weightGradient);
 
         var entryErrors = neuronWeights.entryOperationMultiply(
-            weightsEntry, nextNeuronGradientDeltaEntry);
+          weightsEntry,
+          nextNeuronGradientDeltaEntry,
+        );
 
         var laneError = nextNeuronEntryI == nextEntriesLastIndex
             ? neuronWeights.entryOperationSumLanePartial(
-                entryErrors, neuronWeights.lastEntryLength)
+                entryErrors,
+                neuronWeights.lastEntryLength,
+              )
             : neuronWeights.entryOperationSumLane(entryErrors);
 
         neuronError += laneError;
@@ -316,7 +341,10 @@ abstract class Propagation<
   }
 
   void _backPropagateLastLayerError(
-      Layer<N, E, T, S> layer, int layerIndex, T expected) {
+    Layer<N, E, T, S> layer,
+    int layerIndex,
+    T expected,
+  ) {
     var activationFunction = layer.activationFunction;
 
     var neurons = layer.neurons;
@@ -330,8 +358,9 @@ abstract class Propagation<
 
       _outputErrors.setEntry(i, error);
 
-      var derivative =
-          activationFunction.derivativeEntryWithFlatSpot(neuronsEntry);
+      var derivative = activationFunction.derivativeEntryWithFlatSpot(
+        neuronsEntry,
+      );
       var gradientDelta = expected.entryOperationMultiply(error, derivative);
 
       gradientsDelta.setEntry(i, gradientDelta);
@@ -376,14 +405,15 @@ abstract class Propagation<
         var nextPreviousGradientsEntry = neuronPreviousGradients.getEntry(i);
 
         var wUpdate = computeEntryWeightUpdate(
-            weightsEntry,
-            weightsUpdatesEntry,
-            nextGradientsEntry,
-            nextPreviousGradientsEntry,
-            weightsPreviousUpdateDeltas,
-            weightsNoImprovementCounter,
-            i,
-            neuronOutputEntry);
+          weightsEntry,
+          weightsUpdatesEntry,
+          nextGradientsEntry,
+          nextPreviousGradientsEntry,
+          weightsPreviousUpdateDeltas,
+          weightsNoImprovementCounter,
+          i,
+          neuronOutputEntry,
+        );
 
         neuronWeightsUpdates.setEntry(i, wUpdate);
 
@@ -431,14 +461,15 @@ abstract class Propagation<
     E neuronOutput,
   ) {
     return _computeEntryWeightUpdateNonSIMD(
-        weight,
-        weightLastUpdate,
-        gradient,
-        previousGradient,
-        previousUpdateDeltas,
-        noImprovementCounter,
-        weightsEntryIndex,
-        neuronOutput);
+      weight,
+      weightLastUpdate,
+      gradient,
+      previousGradient,
+      previousUpdateDeltas,
+      noImprovementCounter,
+      weightsEntryIndex,
+      neuronOutput,
+    );
   }
 
   E _computeEntryWeightUpdateNonSIMD(
@@ -455,20 +486,28 @@ abstract class Propagation<
 
     var weightsOffset = weightsEntryIndex * entryBlockSize;
 
-    var listPreviousUpdateDeltas = List<N>.generate(entryBlockSize,
-        (i) => previousUpdateDeltas.getValue(weightsOffset + i));
+    var listPreviousUpdateDeltas = List<N>.generate(
+      entryBlockSize,
+      (i) => previousUpdateDeltas.getValue(weightsOffset + i),
+    );
 
-    var listNoImprovementCounter = List<N>.generate(entryBlockSize,
-        (i) => noImprovementCounter.getValue(weightsOffset + i));
+    var listNoImprovementCounter = List<N>.generate(
+      entryBlockSize,
+      (i) => noImprovementCounter.getValue(weightsOffset + i),
+    );
 
     var weightsUpdates = List<N>.generate(entryBlockSize, (i) {
       var valWeight = _signalInstance.getValueFromEntry(weight, i);
-      var valWeightLastUp =
-          _signalInstance.getValueFromEntry(weightLastUpdate, i);
+      var valWeightLastUp = _signalInstance.getValueFromEntry(
+        weightLastUpdate,
+        i,
+      );
 
       var valGradient = _signalInstance.getValueFromEntry(gradient, i);
-      var valPrevGradient =
-          _signalInstance.getValueFromEntry(previousGradient, i);
+      var valPrevGradient = _signalInstance.getValueFromEntry(
+        previousGradient,
+        i,
+      );
 
       var valNeuronOutput = _signalInstance.getValueFromEntry(neuronOutput, i);
 
@@ -489,8 +528,9 @@ abstract class Propagation<
     var deltasEntry = _signalInstance.createEntry(listPreviousUpdateDeltas);
     previousUpdateDeltas.setEntry(weightsEntryIndex, deltasEntry);
 
-    var noImprovementEntry =
-        _signalInstance.createEntry(listNoImprovementCounter);
+    var noImprovementEntry = _signalInstance.createEntry(
+      listNoImprovementCounter,
+    );
     noImprovementCounter.setEntry(weightsEntryIndex, noImprovementEntry);
 
     return _signalInstance.createEntry(weightsUpdates);

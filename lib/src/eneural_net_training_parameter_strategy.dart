@@ -27,8 +27,9 @@ abstract class ParameterStrategy<N extends num, E, T extends Signal<N, E, T>> {
   void updateValue();
 
   E createValueEntry(double value) {
-    return _propagation.signalInstance
-        .createEntryFullOf(_propagation.signalInstance.toN(value));
+    return _propagation.signalInstance.createEntryFullOf(
+      _propagation.signalInstance.toN(value),
+    );
   }
 }
 
@@ -37,9 +38,10 @@ class StaticParameterStrategy<N extends num, E, T extends Signal<N, E, T>>
     extends ParameterStrategy<N, E, T> {
   double _value;
 
-  StaticParameterStrategy(Propagation<N, E, T, dynamic, dynamic> propagation,
-      [this._value = 0.0])
-      : super(propagation) {
+  StaticParameterStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation, [
+    this._value = 0.0,
+  ]) : super(propagation) {
     _valueEntry = createValueEntry(_value);
   }
 
@@ -55,8 +57,9 @@ class StaticParameterStrategy<N extends num, E, T extends Signal<N, E, T>>
   void setValue(double value) {
     if (_value != value) {
       _value = value;
-      _valueEntry = _propagation.signalInstance
-          .createEntryFullOf(_propagation.signalInstance.toN(value));
+      _valueEntry = _propagation.signalInstance.createEntryFullOf(
+        _propagation.signalInstance.toN(value),
+      );
     }
   }
 
@@ -90,12 +93,12 @@ class ProportionalToErrorStrategy<N extends num, E, T extends Signal<N, E, T>>
   final double multiplier;
 
   ProportionalToErrorStrategy(
-      Propagation<N, E, T, dynamic, dynamic> propagation,
-      {this.minValue = 0.0,
-      this.maxValue = 1.0,
-      this.zero = 0.0,
-      this.multiplier = 1.0})
-      : super(propagation);
+    Propagation<N, E, T, dynamic, dynamic> propagation, {
+    this.minValue = 0.0,
+    this.maxValue = 1.0,
+    this.zero = 0.0,
+    this.multiplier = 1.0,
+  }) : super(propagation);
 
   double _value = -1;
 
@@ -147,9 +150,10 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
     extends ParameterStrategy<N, E, T> {
   final double multiplier;
 
-  LearningRateStrategy(Propagation<N, E, T, dynamic, dynamic> propagation,
-      {this.multiplier = 1.0})
-      : super(propagation);
+  LearningRateStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation, {
+    this.multiplier = 1.0,
+  }) : super(propagation);
 
   double _learningRate = -1;
 
@@ -229,7 +233,7 @@ class LearningRateStrategy<N extends num, E, T extends Signal<N, E, T>>
 class MomentumRateStrategy<N extends num, E, T extends Signal<N, E, T>>
     extends ParameterStrategy<N, E, T> {
   MomentumRateStrategy(Propagation<N, E, T, dynamic, dynamic> propagation)
-      : super(propagation);
+    : super(propagation);
 
   @override
   void initializeValue() {

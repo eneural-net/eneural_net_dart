@@ -12,8 +12,13 @@ class Chronometer implements Comparable<Chronometer> {
 
   Chronometer([this.name = 'Chronometer']);
 
-  Chronometer._(this.name, this.operations, this.failedOperations,
-      this._startTime, this._stopTime);
+  Chronometer._(
+    this.name,
+    this.operations,
+    this.failedOperations,
+    this._startTime,
+    this._stopTime,
+  );
 
   DateTime? _startTime;
 
@@ -50,7 +55,7 @@ class Chronometer implements Comparable<Chronometer> {
   int get elapsedTimeMs => (_stopTime == null || _startTime == null)
       ? 0
       : (_stopTime!.millisecondsSinceEpoch -
-          _startTime!.millisecondsSinceEpoch);
+            _startTime!.millisecondsSinceEpoch);
 
   /// Elapsed time in seconds ([stopTime] - [startTime]).
   double get elapsedTimeSec => elapsedTimeMs / 1000;
@@ -76,8 +81,9 @@ class Chronometer implements Comparable<Chronometer> {
 
   String get failedOperationsAsString => _formatNumber(failedOperations);
 
-  static final NumberFormat _numberFormatDecimal =
-      NumberFormat.decimalPattern('en_US');
+  static final NumberFormat _numberFormatDecimal = NumberFormat.decimalPattern(
+    'en_US',
+  );
 
   String _formatNumber(num n) {
     var s = n.isFinite && n > 10000
@@ -121,8 +127,13 @@ class Chronometer implements Comparable<Chronometer> {
       end = other._stopTime;
     }
 
-    return Chronometer._(name, operations + other.operations,
-        failedOperations + other.failedOperations, _startTime, end);
+    return Chronometer._(
+      name,
+      operations + other.operations,
+      failedOperations + other.failedOperations,
+      _startTime,
+      end,
+    );
   }
 
   @override
@@ -160,13 +171,12 @@ class DataStatistics<N extends num> extends DataEntry {
     num? squaresSum,
     this.lowerStatistics,
     this.upperStatistics,
-  })  : length = length.toDouble(),
-        sum = sum ?? (mean! * length),
-        squaresSum =
-            squaresSum ?? ((standardDeviation! * standardDeviation) * length),
-        mean = mean ?? (sum! / length),
-        standardDeviation =
-            standardDeviation ?? math.sqrt(squaresSum! / length);
+  }) : length = length.toDouble(),
+       sum = sum ?? (mean! * length),
+       squaresSum =
+           squaresSum ?? ((standardDeviation! * standardDeviation) * length),
+       mean = mean ?? (sum! / length),
+       standardDeviation = standardDeviation ?? math.sqrt(squaresSum! / length);
 
   factory DataStatistics._empty(List<N> list) {
     var zero = list.castElement(0);
@@ -174,12 +184,23 @@ class DataStatistics<N extends num> extends DataEntry {
   }
 
   factory DataStatistics._single(N n) {
-    return DataStatistics(1, n, n, n,
-        sum: n, squaresSum: n * n, mean: n.toDouble(), standardDeviation: 0);
+    return DataStatistics(
+      1,
+      n,
+      n,
+      n,
+      sum: n,
+      squaresSum: n * n,
+      mean: n.toDouble(),
+      standardDeviation: 0,
+    );
   }
 
-  factory DataStatistics.compute(List<N> list,
-      {bool computeLowerAndUpper = true, bool keepSeries = false}) {
+  factory DataStatistics.compute(
+    List<N> list, {
+    bool computeLowerAndUpper = true,
+    bool keepSeries = false,
+  }) {
     var length = list.length;
     if (length == 0) return DataStatistics._empty(list);
     if (length == 1) return DataStatistics._single(list.first);
@@ -213,10 +234,16 @@ class DataStatistics<N extends num> extends DataEntry {
       var lower = listSorted.sublist(0, centerIndex);
       var upper = listSorted.sublist(centerIndex);
 
-      lowerStatistics = DataStatistics.compute(lower,
-          computeLowerAndUpper: false, keepSeries: false);
-      upperStatistics = DataStatistics.compute(upper,
-          computeLowerAndUpper: false, keepSeries: false);
+      lowerStatistics = DataStatistics.compute(
+        lower,
+        computeLowerAndUpper: false,
+        keepSeries: false,
+      );
+      upperStatistics = DataStatistics.compute(
+        upper,
+        computeLowerAndUpper: false,
+        keepSeries: false,
+      );
     }
 
     var statistics = DataStatistics(
@@ -241,9 +268,12 @@ class DataStatistics<N extends num> extends DataEntry {
 
   List<N>? series;
 
-  bool isMeanInRange(double minMean, double maxMean,
-      [double minDeviation = double.negativeInfinity,
-      double maxDeviation = double.infinity]) {
+  bool isMeanInRange(
+    double minMean,
+    double maxMean, [
+    double minDeviation = double.negativeInfinity,
+    double maxDeviation = double.infinity,
+  ]) {
     return (mean >= minMean && mean <= maxMean) &&
         (standardDeviation >= minDeviation &&
             standardDeviation <= maxDeviation);
@@ -259,14 +289,16 @@ class DataStatistics<N extends num> extends DataEntry {
 
     var minStr = precision > 0 ? formatDecimal(min, precision: precision) : min;
     var maxStr = precision > 0 ? formatDecimal(max, precision: precision) : max;
-    var centerStr =
-        precision > 0 ? formatDecimal(center, precision: precision) : center;
+    var centerStr = precision > 0
+        ? formatDecimal(center, precision: precision)
+        : center;
 
     //var sumStr = precision > 0 ? formatDecimal(sum, precision: precision) : sum;
     //var squaresSumStr = precision > 0 ? formatDecimal(squaresSum, precision: precision) : squaresSum;
 
-    var meanStr =
-        precision > 0 ? formatDecimal(mean, precision: precision) : mean;
+    var meanStr = precision > 0
+        ? formatDecimal(mean, precision: precision)
+        : mean;
     var standardDeviationStr = precision > 0
         ? formatDecimal(standardDeviation, precision: precision)
         : standardDeviation;
@@ -298,14 +330,20 @@ class DataStatistics<N extends num> extends DataEntry {
       sum: sum + other.sum,
       squaresSum: squaresSum + other.squaresSum,
       mean: (sum + other.sum) / (length + other.length),
-      standardDeviation:
-          math.sqrt((squaresSum + other.squaresSum) / (length + other.length)),
+      standardDeviation: math.sqrt(
+        (squaresSum + other.squaresSum) / (length + other.length),
+      ),
     );
   }
 
   @override
-  List<String> getDataFields() =>
-      ['mean', 'standardDeviation', 'length', 'min', 'max'];
+  List<String> getDataFields() => [
+    'mean',
+    'standardDeviation',
+    'length',
+    'min',
+    'max',
+  ];
 
   @override
   List getDataValues() => [mean, standardDeviation, length, min, max];
@@ -358,8 +396,11 @@ extension SeriesMapExtension<N extends num> on Map<String, List<N>?> {
     return csvFileName;
   }
 
-  String generateCSV(
-      {String separator = ',', N? nullValue, int firstEntryIndex = 1}) {
+  String generateCSV({
+    String separator = ',',
+    N? nullValue,
+    int firstEntryIndex = 1,
+  }) {
     if (isEmpty) return '';
 
     var csv = StringBuffer();

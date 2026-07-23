@@ -126,10 +126,10 @@ abstract class Scale<N extends num> {
 
   /// Converts this Scale to a JSON [Map].
   Map<String, dynamic> toJsonMap() => <String, dynamic>{
-        'format': format,
-        'min': minValue,
-        'max': maxValue,
-      };
+    'format': format,
+    'min': minValue,
+    'max': maxValue,
+  };
 
   /// Instantiates a [Scale] from [json].
   factory Scale.fromJson(dynamic json) {
@@ -153,7 +153,11 @@ abstract class Scale<N extends num> {
         {
           var zoom = jsonMap['zoom']! as num;
           return ScaleZoomableDouble(
-              min.toDouble(), max.toDouble(), zoom.toDouble()) as Scale<N>;
+                min.toDouble(),
+                max.toDouble(),
+                zoom.toDouble(),
+              )
+              as Scale<N>;
         }
       case 'ScaleZoomableInt':
         {
@@ -174,7 +178,7 @@ class ScaleZoomableInt extends ScaleZoomable<int> {
   final int zero = 0;
 
   ScaleZoomableInt(int minValue, int maxValue, int zoom)
-      : super(minValue, maxValue, zoom) {
+    : super(minValue, maxValue, zoom) {
     rangeZoomed = range ~/ zoom;
   }
 
@@ -207,7 +211,7 @@ class ScaleZoomableDouble extends ScaleZoomable<double> {
   final double zero = 0;
 
   ScaleZoomableDouble(double minValue, double maxValue, double zoom)
-      : super(minValue, maxValue, zoom) {
+    : super(minValue, maxValue, zoom) {
     rangeZoomed = range / zoom;
   }
 

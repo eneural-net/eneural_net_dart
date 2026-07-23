@@ -7,12 +7,7 @@ void main() {
 
   // The samples to learn in Float32x4 data type:
   var samples = SampleFloat32x4.toListFromString(
-    [
-      '0,0=0',
-      '1,0=1',
-      '0,1=1',
-      '1,1=0',
-    ],
+    ['0,0=0', '1,0=1', '0,1=1', '1,1=0'],
     scale,
     true, // Already normalized in the scale.
   );
@@ -49,7 +44,10 @@ void main() {
   // a max retry of 10 when a training session can't reach
   // the target global error:
   var achievedTargetError = backpropagation.trainUntilGlobalError(
-      targetGlobalError: 0.01, maxEpochs: 50000, maxRetries: 10);
+    targetGlobalError: 0.01,
+    maxEpochs: 50000,
+    maxRetries: 10,
+  );
 
   chronometer.stop(operations: backpropagation.totalTrainingActivations);
 

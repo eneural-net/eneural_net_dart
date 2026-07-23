@@ -3,16 +3,23 @@ import 'package:eneural_net/src/eneural_net_training_propagation.dart';
 
 /// Implementation of Backpropagation training algorithm.
 class Backpropagation<
-    N extends num,
-    E,
-    T extends Signal<N, E, T>,
-    S extends Scale<N>,
-    P extends Sample<N, E, T, S>> extends Propagation<N, E, T, S, P> {
-  Backpropagation(ANN<N, E, T, S> ann, SamplesSet<P> samplesSet,
-      {String? subject})
-      : super(ann, samplesSet,
-            algorithmName: 'Backpropagation',
-            subject: subject ?? samplesSet.subject);
+  N extends num,
+  E,
+  T extends Signal<N, E, T>,
+  S extends Scale<N>,
+  P extends Sample<N, E, T, S>
+>
+    extends Propagation<N, E, T, S, P> {
+  Backpropagation(
+    ANN<N, E, T, S> ann,
+    SamplesSet<P> samplesSet, {
+    String? subject,
+  }) : super(
+         ann,
+         samplesSet,
+         algorithmName: 'Backpropagation',
+         subject: subject ?? samplesSet.subject,
+       );
 
   @override
   double computeWeightUpdate(
@@ -51,9 +58,13 @@ class Backpropagation<
     var previousUpdateDelta = previousUpdateDeltas.getEntry(weightsEntryIndex);
 
     var deltaMomentum = signalInstance.entryOperationMultiply(
-        previousUpdateDelta, momentumEntry);
-    var gradientLearn =
-        signalInstance.entryOperationMultiply(learningRateEntry, gradient);
+      previousUpdateDelta,
+      momentumEntry,
+    );
+    var gradientLearn = signalInstance.entryOperationMultiply(
+      learningRateEntry,
+      gradient,
+    );
 
     var delta = signalInstance.entryOperationSum(gradientLearn, deltaMomentum);
 
@@ -72,14 +83,14 @@ class Backpropagation<
     T noImprovementCounter,
     int weightsEntryIndex,
     E neuronOutput,
-  ) =>
-      computeEntryWeightUpdateSIMD(
-          weight,
-          weightLastUpdate,
-          gradient,
-          previousGradient,
-          previousUpdateDeltas,
-          noImprovementCounter,
-          weightsEntryIndex,
-          neuronOutput);
+  ) => computeEntryWeightUpdateSIMD(
+    weight,
+    weightLastUpdate,
+    gradient,
+    previousGradient,
+    previousUpdateDeltas,
+    noImprovementCounter,
+    weightsEntryIndex,
+    neuronOutput,
+  );
 }
