@@ -1,0 +1,18 @@
+# Codecov configuration.
+#
+# The native FFI implementation is macOS-only (dart:ffi + Apple Accelerate/Metal)
+# and cannot execute on the Linux CI that generates coverage, so it is excluded
+# from coverage metrics. Its numeric parity with the pure-Dart path is verified
+# by `test/eneural_net_native_diff_test.dart` when run on macOS with the native
+# libraries built.
+ignore:
+  - "lib/src/native/native_accelerator_io.dart"
+
+coverage:
+  status:
+    patch:
+      default:
+        informational: true
+    project:
+      default:
+        informational: true

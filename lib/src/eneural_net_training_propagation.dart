@@ -221,6 +221,17 @@ abstract class Propagation<
   /// The previous global error while updating weights.
   double get lastGlobalLearnError => _lastGlobalLearnError;
 
+  /// Publishes the epoch's learn error, rolling the previous value.
+  ///
+  /// Used by native-accelerated trainers (which run the epoch off-loop) so that
+  /// the learning-rate/momentum strategies adapt identically to the pure-Dart
+  /// path. The pure-Dart [learn] sets these fields directly and does not call
+  /// this method.
+  void updateGlobalLearnError(double globalLearnError) {
+    _lastGlobalLearnError = _globalLearnError;
+    _globalLearnError = globalLearnError;
+  }
+
   @override
   bool learn(List<P> samples, double targetGlobalError) {
     var allLayers = ann.allLayers;
