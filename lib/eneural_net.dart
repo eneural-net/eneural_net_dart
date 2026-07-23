@@ -12,3 +12,5 @@ export 'src/eneural_net_training_backpropagation.dart';
 export 'src/eneural_net_training_rprop.dart';
 export 'src/native/native_backend.dart' show NativeBackend;
 export 'src/native/native_trainer.dart' show NativeBackpropagation, NativeRProp;
+export 'src/native/webgpu/webgpu_trainer.dart'
+    show WebGpuBackpropagation, WebGpuRProp, WebGpuTrainerMixin;

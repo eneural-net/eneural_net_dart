@@ -454,6 +454,25 @@ abstract class Training<
     }
   }
 
+  /// Records the outcome of an externally-driven training block (e.g. the async
+  /// WebGPU trainers, which run epochs off the synchronous [_trainImpl] loop) so
+  /// the public bookkeeping getters ([globalError], [trainedEpochs],
+  /// [totalTrainedEpochs], [trainingActivations]) reflect it. Also updates the
+  /// best-training snapshot via [checkBestTrainingError].
+  void recordTrainingBlock(double globalError, int epochs) {
+    _lastGlobalError = _globalError;
+    _globalError = globalError;
+
+    _trainedEpochs += epochs;
+    _totalTrainedEpochs += epochs;
+
+    var activations = epochs * samples.length;
+    _trainingActivations += activations;
+    _totalTrainingActivations += activations;
+
+    checkBestTrainingError(globalError);
+  }
+
   static final Random _random = Random();
 
   /// The initial ANN pool size.

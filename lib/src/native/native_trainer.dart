@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import '../eneural_net_activation_functions.dart';
 import '../eneural_net_ann.dart';
 import '../eneural_net_sample.dart';
 import '../eneural_net_scale.dart';
@@ -10,67 +9,13 @@ import '../eneural_net_training_propagation.dart';
 import '../eneural_net_training_rprop.dart';
 import 'native_accelerator.dart';
 import 'native_backend.dart';
+import 'native_spec.dart';
 
 export 'native_backend.dart' show NativeBackend;
 
 /// Signal type accepted by the native-accelerated trainers (Float32x4 only).
 typedef NativeSample =
     Sample<double, Float32x4, SignalFloat32x4, Scale<double>>;
-
-/// Maps an [ActivationFunction] to the native activation id, or `null` when the
-/// function is not supported by the native backends.
-int? _activationId(ActivationFunction af) {
-  switch (af.name) {
-    case 'Linear':
-      return 0;
-    case 'Sigmoid':
-      return 1;
-    case 'SigmoidFast':
-      return 2;
-    case 'SigmoidBoundedFast':
-      return 3;
-    default:
-      return null;
-  }
-}
-
-/// Builds a [NativeNetworkSpec] for [ann], or `null` if the network uses an
-/// activation function or signal format not supported by the native backends.
-NativeNetworkSpec? _buildSpec(
-  ANN<double, Float32x4, SignalFloat32x4, Scale<double>> ann,
-) {
-  final format = ann.format;
-  if (format != 'Float32x4' && format != 'Float32x4Mod4') return null;
-
-  final layers = ann.allLayers;
-  final neuronCounts = <int>[];
-  final withBias = <bool>[];
-  final activationIds = <int>[];
-  final activationScale = <double>[];
-  final flatSpots = <double>[];
-
-  for (final layer in layers) {
-    final af = layer.activationFunction;
-    final id = _activationId(af);
-    if (id == null) return null;
-
-    neuronCounts.add(layer.length);
-    withBias.add(layer.withBiasNeuron);
-    activationIds.add(id);
-    activationScale.add(
-      af is ActivationFunctionSigmoidBoundedFast ? af.scale : 0.0,
-    );
-    flatSpots.add(af.flatSpot);
-  }
-
-  return NativeNetworkSpec(
-    neuronCounts: neuronCounts,
-    withBias: withBias,
-    activationIds: activationIds,
-    activationScale: activationScale,
-    flatSpots: flatSpots,
-  );
-}
 
 /// Shared native-acceleration logic for [NativeBackpropagation]/[NativeRProp].
 ///
@@ -109,7 +54,7 @@ mixin _NativeTrainerMixin<P extends NativeSample>
 
     if (requestedBackend == NativeBackend.none) return;
 
-    final spec = _buildSpec(ann);
+    final spec = buildNativeNetworkSpec(ann);
     if (spec == null) return;
 
     final acc = resolveNativeAccelerator(
