@@ -1,3 +1,29 @@
+## 1.4.0
+
+- **NEW: Native acceleration (macOS CPU + Metal).** Optional whole-epoch-on-device
+  training backends: Apple **Accelerate** (BLAS/vDSP, CPU) and **Metal** (GPU).
+  The network, weights, optimizer state and the full sample set are uploaded once
+  and each epoch runs entirely in native code (forward + backprop + weight
+  update), reproducing the pure-Dart iRProp+/Backpropagation numerics within
+  `float32` tolerance.
+  - New drop-in trainers `NativeRProp` and `NativeBackpropagation` (for
+    `Float32x4` networks), with a `NativeBackend` selector (`auto`/`cpu`/`metal`/
+    `none`).
+  - The package remains pure-Dart: web builds and `pub publish` are unaffected;
+    the trainers transparently fall back to the pure-Dart SIMD path when no
+    native library is available or the network is unsupported.
+  - Native libraries are built locally via `bash native/macos/build.sh` (per-arch
+    `.dylib`, git-ignored), loaded at runtime via `dart:ffi`.
+  - The Metal backend is **batched**: all samples are processed at once, so each
+    epoch is a handful of `MetalPerformanceShaders` GEMMs plus elementwise
+    kernels (dispatch count independent of the sample count). On the
+    `64 -> 256 -> 16` benchmark: CPU ~2.4x and Metal ~3.6x faster than pure Dart;
+    the Metal lead grows with network size. `auto` picks CPU for small networks
+    and Metal for large ones.
+  - Added `example/eneural_net_benchmark_native.dart` and
+    `example/eneural_net_acceleration_example.dart`, plus
+    `test/eneural_net_native_diff_test.dart` (differential parity vs pure Dart).
+
 ## 1.3.2
 
 - **FIX (Backpropagation/RProp)**: bias neurons propagate a constant `1` in the
