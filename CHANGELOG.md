@@ -1,3 +1,22 @@
+## 1.3.2
+
+- **FIX (Backpropagation/RProp)**: bias neurons propagate a constant `1` in the
+  forward pass, but the gradient computation used the value stored in the bias
+  neuron slot instead. That value is `0` for the input layer and `f(net)` for
+  hidden layers, so:
+  - **Input-layer bias weights received a zero gradient and never learned** —
+    hidden neurons had no learnable input threshold (every hidden neuron output
+    was pinned to `0.5` for a zero input).
+  - Hidden-layer bias weights learned with a wrong-magnitude (but correct-sign)
+    gradient.
+
+  The gradient now uses the bias neuron's true forward output (`1`). Verified
+  by numerical gradient checking: the analytical gradient now matches the
+  central-difference gradient for **every** weight (cosine `0.933 → 1.000`),
+  and networks converge faster and to a lower error.
+
+  Added `test/eneural_net_backprop_gradient_test.dart` (gradient-check harness).
+
 ## 1.3.1
 
 - Test suite expanded from 24 to 565 tests, including integration tests.
