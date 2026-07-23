@@ -224,9 +224,9 @@ extension ListExtension<T> on List<T> {
     return lng;
   }
 
+  /// Returns `true` if all elements are equal to [element].
+  /// An empty list is vacuously `true`.
   bool allEquals(T element) {
-    if (length == 0) return false;
-
     for (var e in this) {
       if (e != element) return false;
     }
@@ -284,9 +284,9 @@ extension ListExtension<T> on List<T> {
 }
 
 extension SetExtension<T> on Set<T> {
+  /// Returns `true` if all elements are equal to [element].
+  /// An empty set is vacuously `true`.
   bool allEquals(T element) {
-    if (length == 0) return false;
-
     for (var e in this) {
       if (e != element) return false;
     }
@@ -441,9 +441,20 @@ extension ListNumExtension<N extends num> on List<N> {
     return List.generate(length, (i) => this[i] - other[i]);
   }
 
-  List<num> operator +(List<num> other) {
+  /// Element-wise sum with [other].
+  ///
+  /// Prefer this over the `+` operator: `List` defines its own `operator +`
+  /// (concatenation), which shadows the extension operator below.
+  List<num> plus(List<num> other) {
     return List.generate(length, (i) => this[i] + other[i]);
   }
+
+  /// Element-wise sum with [other]. See [plus].
+  ///
+  /// NOTE: `List` defines `operator +` as concatenation and an instance member
+  /// always wins over an extension member, so `list1 + list2` will NOT call
+  /// this operator. Use [plus] instead.
+  List<num> operator +(List<num> other) => plus(other);
 
   List<num> operator *(List<num> other) {
     return List.generate(length, (i) => this[i] * other[i]);
@@ -537,9 +548,20 @@ extension ListDoubleExtension on List<double> {
     return List.generate(length, (i) => this[i] - other[i]);
   }
 
-  List<double> operator +(List<double> other) {
+  /// Element-wise sum with [other].
+  ///
+  /// Prefer this over the `+` operator: `List` defines its own `operator +`
+  /// (concatenation), which shadows the extension operator below.
+  List<double> plus(List<double> other) {
     return List.generate(length, (i) => this[i] + other[i]);
   }
+
+  /// Element-wise sum with [other]. See [plus].
+  ///
+  /// NOTE: `List` defines `operator +` as concatenation and an instance member
+  /// always wins over an extension member, so `list1 + list2` will NOT call
+  /// this operator. Use [plus] instead.
+  List<double> operator +(List<double> other) => plus(other);
 
   List<double> operator *(List<double> other) {
     return List.generate(length, (i) => this[i] * other[i]);
@@ -629,6 +651,11 @@ extension NumExtension on num {
 
   double get naturalExponent => exp(this);
 
+  /// Clamps this to [min]..[max].
+  ///
+  /// NOTE: `num` already declares `clamp` and an instance member always wins
+  /// over an extension member, so `n.clamp(min, max)` calls `num.clamp`.
+  /// This is only reachable as `NumExtension(n).clamp(min, max)`.
   num clamp(num min, num max) {
     if (this < min) {
       return min;
@@ -651,6 +678,9 @@ extension NumExtension on num {
 extension DoubleExtension on double {
   double get square => this * this;
 
+  /// Clamps this to [min]..[max].
+  ///
+  /// NOTE: shadowed by `num.clamp`. See [NumExtension.clamp].
   double clamp(double min, double max) {
     if (this < min) {
       return min;
@@ -673,6 +703,9 @@ extension DoubleExtension on double {
 extension IntExtension on int {
   int get square => this * this;
 
+  /// Clamps this to [min]..[max].
+  ///
+  /// NOTE: shadowed by `num.clamp`. See [NumExtension.clamp].
   int clamp(int min, int max) {
     if (this < min) {
       return min;

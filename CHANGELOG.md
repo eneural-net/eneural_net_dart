@@ -1,3 +1,90 @@
+## 1.3.1
+
+- Test suite expanded from 24 to 565 tests, including integration tests.
+  Line coverage: 84% -> 99.7%.
+
+- `Signal`:
+  - **FIX**: `lastEntryLength` returned a negative value for the
+    implementations that allocate entries in chunks of 4 (`SignalInt32x4` and
+    `SignalFloat32x4Mod4`), breaking `computeSumSquares`.
+  - **FIX**: `setExtraValues` threw `StateError` whenever the padding was
+    bigger than 3 values, which made **any `Int32x4` ANN impossible to build**.
+  - **FIX**: `SignalInt32x4.from`/`fromEntries` and
+    `SignalFloat32x4Mod4.fromEntries` produced signals whose entries length
+    was not a multiple of 4, breaking their unrolled SIMD loops.
+  - **FIX**: `hashCode` was identity based while `==` was value based, so
+    equal signals could not be used as `Set`/`Map` keys.
+  - **FIX**: `SignalFloat32x4Mod4.copy()` returned a plain `SignalFloat32x4`.
+  - **FIX**: `SignalFloat32x4Mod4.calcEntriesCapacityForSize` ignored the
+    chunking.
+  - **FIX**: `multiply`, `subtract` and `multiplyEntries` returned a signal of
+    `capacity` length instead of `length`.
+  - Added `valuesEntriesLength`: the number of entries that hold values.
+
+- `Scale`:
+  - **FIX**: `ScaleZoomableInt` could not be decoded from JSON (the emitted
+    format name didn't match `Scale.fromJson`, and `zoom` was never
+    serialized).
+
+- `ActivationFunction`:
+  - **FIX**: `ActivationFunctionSigmoidBoundedFast.activateEntry` (SIMD)
+    computed a different function than `activate`, and ignored `scale`.
+  - **FIX**: `ActivationFunctionSigmoidFast` and
+    `ActivationFunctionSigmoidBoundedFast` added the `flat spot` in the SIMD
+    derivative but not in the scalar one.
+  - **FIX**: `ActivationFunctionSigmoidFastInt.derivativeEntry` used a
+    hardcoded `100` instead of `scaleMax`.
+  - **FIX**: `createRandomWeights` ignored its `scale` argument.
+  - **FIX**: `byName`/`fromJson` didn't know the `Int32x4` functions, making
+    the `Int32x4` branches of `ANN.fromJson` unreachable. Added `scaleMax` to
+    `byName` and to `ActivationFunctionSigmoidFastInt.toJsonMap`.
+
+- `ANN`/`Layer`:
+  - **FIX**: the "no bias neuron at the output layer" check never fired,
+    silently adding an extra output neuron.
+  - **FIX**: `Layer.toJsonMap()` threw on a layer that was not connected yet.
+  - **FIX**: `resetWeights` left the padding weights with random values.
+
+- `Sample`:
+  - **FIX**: `proximityStatistics` used the input proximity twice, ignoring
+    the output.
+  - **FIX**: `SamplesSet.samplesSimilarityGroups` threw `RangeError` when
+    given a `samples` list shorter than the set.
+
+- `Training`:
+  - **FIX**: the `subject` parameter of `Training`/`Backpropagation`/`RProp`
+    was discarded.
+  - **FIX**: `LearningRateStrategy` could never recover the learning rate
+    (the counter was reset on every call), and computed an `Infinity` initial
+    value before the training was initialized.
+  - Added `bestTrainingError` and `resetBestTraining`: a new training session
+    no longer inherits the best weights of the previous one.
+
+- `DataStatistics`:
+  - **FIX**: `standardDeviation` was the RMS (the mean was never subtracted),
+    disagreeing with `List.standardDeviation`.
+  - **FIX**: `mean`/`standardDeviation`/`squaresMean` were `NaN` for an empty
+    series.
+  - Added `computeStandardDeviation` and `computeSquaresSum`.
+
+- `Chronometer`:
+  - **FIX**: `reset()` didn't reset `failedOperations`.
+
+- `fast_math`:
+  - **FIX**: `expm1` never wrote its high precision output, which made
+    `sinh(x)` return `0.0` for every `|x| <= 0.25`.
+  - **FIX**: `copySign` ignored the sign bit of `-0.0`, so `atan2(-0.0, x)`
+    with a negative `x` returned `+pi` instead of `-pi`.
+  - **FIX**: `exp`, `expHighPrecision`, `expm1` and `atan` threw
+    `UnsupportedError` or returned a wrong finite value for `NaN`/infinities.
+
+- Extensions:
+  - `allEquals` on an empty collection is now vacuously `true`.
+  - Added `List.plus` (element-wise sum): the `+` operator of the extensions
+    is shadowed by `List.operator +` (concatenation) and can never be reached
+    through the operator syntax. The `clamp` extensions are likewise shadowed
+    by `num.clamp` and are now documented as such.
+
 ## 1.3.0
 
 - Code reformatted with the new Dart formatter style (no behavior changes).
