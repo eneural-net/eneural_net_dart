@@ -212,6 +212,33 @@ Unsupported networks (integer `Int32x4` signals, or an activation function other
 than `Linear`/`Sigmoid`/`SigmoidFast`/`SigmoidBoundedFast`) also fall back to
 pure Dart automatically.
 
+## WebGPU (browser GPU)
+
+In the browser, training can run on the GPU via **WebGPU** (WGSL compute
+shaders). Like the Metal backend it is a batched whole-epoch trainer, but WebGPU
+is **asynchronous** (GPU readback is a `Future`), so it is exposed through
+separate trainers with `Future`-returning methods rather than the synchronous
+`train()`:
+
+```dart
+var trainer = WebGpuRProp(ann, samplesSet); // or WebGpuBackpropagation
+
+if (await trainer.isWebGpuAccelerated) {
+  print('training on the GPU');
+}
+
+await trainer.trainUntilGlobalErrorAsync(targetGlobalError: 1e-4);
+// also: await trainer.trainAsync(epochs, targetError);
+```
+
+`WebGpuRProp` / `WebGpuBackpropagation` extend `RProp` / `Backpropagation`, so
+they keep the synchronous pure-Dart API too. When WebGPU is unavailable (not a
+browser, no WebGPU support, or an unsupported network) the async methods
+transparently fall back to the synchronous pure-Dart trainer — so the same code
+runs on the Dart VM and the web.
+
+See `example/eneural_net_webgpu_example.dart`.
+
 # Signal
 
 The class `Signal` represents the collection of numbers (including its related operations)

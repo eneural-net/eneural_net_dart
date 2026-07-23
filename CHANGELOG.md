@@ -1,3 +1,21 @@
+## 1.5.0
+
+- **NEW: WebGPU acceleration (browser GPU).** Whole-epoch-on-device training in
+  the browser via WebGPU (WGSL compute shaders), batched like the Metal backend.
+  - New `WebGpuRProp` / `WebGpuBackpropagation` trainers (extending
+    `RProp`/`Backpropagation` on `Float32x4` networks). Because WebGPU is
+    asynchronous, training is driven by `Future`-returning methods
+    (`trainUntilGlobalErrorAsync`, `trainAsync`, `activateWebGpu`).
+  - Reproduces the pure-Dart iRProp+/Backpropagation numerics. When WebGPU is
+    unavailable (Dart VM, no browser WebGPU support, or an unsupported network)
+    the async methods transparently fall back to the synchronous pure-Dart
+    trainer, so the same code runs everywhere.
+  - Web-only code is behind a conditional import (`dart.library.js_interop`), so
+    the package still compiles for the Dart VM/native and `pub publish` is
+    unaffected.
+  - Added `example/eneural_net_webgpu_example.dart` and
+    `test/eneural_net_webgpu_test.dart`.
+
 ## 1.4.0
 
 - **NEW: Native acceleration (macOS CPU + Metal).** Optional whole-epoch-on-device
