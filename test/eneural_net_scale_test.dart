@@ -53,7 +53,11 @@ void main() {
       expect(scale.format, equals('double'));
       expect(scale.toN(1), equals(1.0));
       expect(scale.toN(1), isA<double>());
-      expect(scale.toString(), equals('ScaleDouble{0.0 .. 100.0}'));
+      // `.0` is dropped when doubles are stringified on the web platform:
+      expect(
+        scale.toString(),
+        matches(RegExp(r'^ScaleDouble\{0(\.0)? \.\. 100(\.0)?\}$')),
+      );
     });
 
     test('normalize is the inverse of denormalize', () {
@@ -99,9 +103,14 @@ void main() {
       expect(scale.zoom, equals(10.0));
       expect(scale.rangeZoomed, equals(10.0));
       expect(scale.format, equals('ZoomableDouble'));
+      // `.0` is dropped when doubles are stringified on the web platform:
       expect(
         scale.toString(),
-        equals('ScaleZoomableDouble{0.0 .. 100.0 * 10.0}'),
+        matches(
+          RegExp(
+            r'^ScaleZoomableDouble\{0(\.0)? \.\. 100(\.0)? \* 10(\.0)?\}$',
+          ),
+        ),
       );
 
       expect(scale.normalize(100), equals(10.0));

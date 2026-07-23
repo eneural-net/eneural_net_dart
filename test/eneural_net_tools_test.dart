@@ -374,6 +374,13 @@ void main() {
   });
 
   group('SeriesMapExtension.generateCSV', () {
+    // Whole-number doubles stringify as `1.0` on the VM but `1` on the web
+    // platform, so drop a trailing `.0` before comparing CSV cells.
+    String normalizeCsv(String line) => line
+        .split(',')
+        .map((c) => c.replaceFirst(RegExp(r'\.0$'), ''))
+        .join(',');
+
     test('generates a column per series', () {
       var series = <String, List<double>?>{
         'a': [1, 2, 3],
@@ -385,8 +392,8 @@ void main() {
 
       expect(lines.length, equals(4));
       expect(lines[0], equals('#,a,b'));
-      expect(lines[1], equals('1,1.0,4.0'));
-      expect(lines[3], equals('3,3.0,6.0'));
+      expect(normalizeCsv(lines[1]), equals('1,1,4'));
+      expect(normalizeCsv(lines[3]), equals('3,3,6'));
     });
 
     test('pads shorter series with the null value', () {
@@ -399,8 +406,8 @@ void main() {
       var csv = series.generateCSV(nullValue: -1);
       var lines = csv.trim().split('\n');
 
-      expect(lines[1], equals('1,1.0,4.0,-1.0'));
-      expect(lines[2], equals('2,2.0,-1.0,-1.0'));
+      expect(normalizeCsv(lines[1]), equals('1,1,4,-1'));
+      expect(normalizeCsv(lines[2]), equals('2,2,-1,-1'));
     });
 
     test('accepts a custom separator and first index', () {
