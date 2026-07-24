@@ -315,3 +315,133 @@ class MomentumRateStrategy<N extends num, E, T extends Signal<N, E, T>>
     }
   }
 }
+
+/// Base for epoch-based learning-rate schedules. The value is recomputed each
+/// epoch from [Training.trainedEpochs] via [computeValue].
+abstract class LearningRateScheduleStrategy<
+  N extends num,
+  E,
+  T extends Signal<N, E, T>
+>
+    extends ParameterStrategy<N, E, T> {
+  final double baseValue;
+  double _value;
+  late E _valueEntry;
+
+  /// Epochs elapsed (incremented on each [updateValue]); independent of the
+  /// training block bookkeeping.
+  int _epoch = 0;
+
+  LearningRateScheduleStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation,
+    this.baseValue,
+  ) : _value = baseValue,
+      super(propagation) {
+    _valueEntry = createValueEntry(baseValue);
+  }
+
+  /// The scheduled value at [epoch] (0-based).
+  double computeValue(int epoch);
+
+  @override
+  double get value => _value;
+
+  @override
+  E get valueEntry => _valueEntry;
+
+  @override
+  double get initialValue => baseValue;
+
+  @override
+  void setValue(double value) {
+    _value = value;
+    _valueEntry = createValueEntry(value);
+  }
+
+  @override
+  void initializeValue() {
+    _epoch = 0;
+    setValue(computeValue(0));
+  }
+
+  @override
+  void resetValue() {
+    _epoch = 0;
+    setValue(computeValue(0));
+  }
+
+  @override
+  void updateValue() {
+    _epoch++;
+    setValue(computeValue(_epoch));
+  }
+}
+
+/// Step decay: `base · gamma^(epoch ~/ stepSize)`.
+class StepDecayStrategy<N extends num, E, T extends Signal<N, E, T>>
+    extends LearningRateScheduleStrategy<N, E, T> {
+  final int stepSize;
+  final double gamma;
+
+  StepDecayStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation,
+    double baseValue, {
+    this.stepSize = 100,
+    this.gamma = 0.5,
+  }) : super(propagation, baseValue);
+
+  @override
+  double computeValue(int epoch) => baseValue * pow(gamma, epoch ~/ stepSize);
+}
+
+/// Exponential decay: `base · gamma^epoch`.
+class ExponentialDecayStrategy<N extends num, E, T extends Signal<N, E, T>>
+    extends LearningRateScheduleStrategy<N, E, T> {
+  final double gamma;
+
+  ExponentialDecayStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation,
+    double baseValue, {
+    this.gamma = 0.99,
+  }) : super(propagation, baseValue);
+
+  @override
+  double computeValue(int epoch) => baseValue * pow(gamma, epoch);
+}
+
+/// Cosine annealing from `base` down to [minValue] over [maxEpochs].
+class CosineAnnealingStrategy<N extends num, E, T extends Signal<N, E, T>>
+    extends LearningRateScheduleStrategy<N, E, T> {
+  final int maxEpochs;
+  final double minValue;
+
+  CosineAnnealingStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation,
+    double baseValue, {
+    this.maxEpochs = 1000,
+    this.minValue = 0.0,
+  }) : super(propagation, baseValue);
+
+  @override
+  double computeValue(int epoch) {
+    final t = (epoch.clamp(0, maxEpochs)) / maxEpochs;
+    return minValue + 0.5 * (baseValue - minValue) * (1 + cos(pi * t));
+  }
+}
+
+/// Linear warmup to `base` over [warmupEpochs], constant thereafter.
+class WarmupStrategy<N extends num, E, T extends Signal<N, E, T>>
+    extends LearningRateScheduleStrategy<N, E, T> {
+  final int warmupEpochs;
+
+  WarmupStrategy(
+    Propagation<N, E, T, dynamic, dynamic> propagation,
+    double baseValue, {
+    this.warmupEpochs = 50,
+  }) : super(propagation, baseValue);
+
+  @override
+  double computeValue(int epoch) => epoch >= warmupEpochs
+      ? baseValue
+      : baseValue * (epoch + 1) / warmupEpochs;
+}
