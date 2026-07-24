@@ -9,9 +9,11 @@ pubspec.lock
 # Conventional directory for build outputs
 build/
 
-# Native acceleration build outputs (per-arch dylibs are built locally)
+# Native acceleration build outputs (per-arch libraries are built locally)
 native/**/build/
 *.dylib
+*.dll
+*.so
 
 # Directory created by dartdoc
 doc/api/

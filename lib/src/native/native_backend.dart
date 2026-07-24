@@ -11,8 +11,12 @@ enum NativeBackend {
   /// Apple Metal (GPU) backend.
   metal,
 
-  /// Automatically pick the best available backend (Metal if available and
-  /// worthwhile, otherwise CPU, otherwise [none]).
+  /// NVIDIA CUDA (GPU) backend (Windows/Linux).
+  cuda,
+
+  /// Automatically pick the best available backend for the host:
+  /// on macOS the Metal (GPU) backend when worthwhile else CPU (Accelerate);
+  /// on Windows/Linux the CUDA (GPU) backend when available; otherwise [none].
   auto,
 }
 

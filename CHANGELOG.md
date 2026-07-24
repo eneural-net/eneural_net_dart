@@ -1,3 +1,18 @@
+## 1.7.0
+
+- **NEW: CUDA (NVIDIA GPU) native backend** for Windows/Linux (`native/cuda`),
+  added as `NativeBackend.cuda`. Same batched whole-epoch design as the Metal
+  backend: the three per-layer GEMMs (forward / backprop / gradient) run on
+  **cuBLAS**, and the activation/delta/Backpropagation/iRProp+ steps are CUDA
+  kernels translated 1:1 from the pure-Dart numerics (incl. the bias-row = 1
+  rule), so weights read back match the Dart trainer within `float32` tolerance.
+- `NativeBackend.auto` is now platform-aware: macOS picks CPU/Metal, Windows/Linux
+  pick CUDA when available; requesting a backend not available on the host falls
+  back to the pure-Dart SIMD path.
+- Build via `native/cuda/build.bat` (Windows), `native/cuda/build.sh` (Linux), or
+  CMake — requires the NVIDIA CUDA Toolkit (`nvcc` + cuBLAS) and produces
+  `libeneural_cuda_<arch>.{dll,so}`.
+
 ## 1.6.1
 
 - Examples: added `example/datasets/` — runnable training examples on real,

@@ -47,9 +47,10 @@ void main() {
   // Native-accelerated iRProp+ trainer.
   //
   // `backend` can be:
-  //   NativeBackend.auto  -> CPU when available, else Metal, else pure Dart (default)
-  //   NativeBackend.cpu   -> Apple Accelerate (BLAS/vDSP)
-  //   NativeBackend.metal -> Apple Metal (GPU)
+  //   NativeBackend.auto  -> best available for the host, else pure Dart (default)
+  //   NativeBackend.cpu   -> Apple Accelerate (BLAS/vDSP)   [macOS]
+  //   NativeBackend.metal -> Apple Metal (GPU)              [macOS]
+  //   NativeBackend.cuda  -> NVIDIA CUDA (GPU)              [Windows/Linux]
   //   NativeBackend.none  -> force the pure-Dart SIMD path
   var trainer = NativeRProp(ann, samplesSet, backend: NativeBackend.auto);
 

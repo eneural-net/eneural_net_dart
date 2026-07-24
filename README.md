@@ -154,13 +154,14 @@ See "[dart:typed_data library][dart_typed_data]" and "[Using SIMD in Dart][using
 [dart_typed_data]: https://api.dart.dev/stable/2.12.4/dart-typed_data/dart-typed_data-library.html
 [using_simd]: https://www.dartcn.com/articles/server/simd
 
-# Native Acceleration (macOS: CPU + Metal)
+# Native Acceleration (macOS: CPU + Metal · Windows/Linux: CUDA)
 
-On macOS the training loop can be offloaded to a native backend built on Apple
-**Accelerate** (BLAS/vDSP, CPU) or **Metal** (GPU). The network, its weights, the
-optimizer state and the full training sample set are uploaded once and each epoch
-runs entirely in native code (forward + backprop + weight update), reproducing
-the pure-Dart iRProp+/Backpropagation numerics within `float32` tolerance.
+The training loop can be offloaded to a native backend: on macOS via Apple
+**Accelerate** (BLAS/vDSP, CPU) or **Metal** (GPU); on Windows/Linux via
+**CUDA** (NVIDIA GPU). The network, its weights, the optimizer state and the full
+training sample set are uploaded once and each epoch runs entirely in native code
+(forward + backprop + weight update), reproducing the pure-Dart
+iRProp+/Backpropagation numerics within `float32` tolerance.
 
 Native acceleration is **optional and opt-in**. The package stays pure-Dart (it
 still publishes to pub.dev and runs on the web); if the native library isn't
@@ -169,10 +170,17 @@ present, the trainers transparently fall back to the pure-Dart SIMD path.
 ### Build the native libraries
 
 ```bash
+# macOS (CPU + Metal):
 bash native/macos/build.sh
 # produces (git-ignored):
 #   native/macos/cpu/build/libeneural_cpu_<arch>.dylib
 #   native/macos/metal/build/libeneural_metal_<arch>.dylib
+
+# Windows/Linux (CUDA — requires the NVIDIA CUDA Toolkit: nvcc + cuBLAS):
+native\cuda\build.bat        # Windows
+bash native/cuda/build.sh    # Linux
+# produces (git-ignored):
+#   native/cuda/build/libeneural_cuda_<arch>.{dll,so}
 ```
 
 ### Use an accelerated trainer
@@ -186,27 +194,36 @@ import 'package:eneural_net/eneural_net.dart';
 var trainer = NativeRProp(
   ann,
   SamplesSet(samples, subject: 'xor'),
-  backend: NativeBackend.auto, // auto | cpu | metal | none
+  backend: NativeBackend.auto, // auto | cpu | metal | cuda | none
 );
 
-print(trainer.activeBackend); // NativeBackend.cpu (or .metal / .none)
+print(trainer.activeBackend); // NativeBackend.cpu (or .metal / .cuda / .none)
 
 trainer.trainUntilGlobalError(targetGlobalError: 1e-6);
 ```
 
 Backend selection:
 
-- **`auto`** (default) — uses the CPU backend for small networks and the Metal
-  (GPU) backend for large ones (Metal has a fixed per-epoch overhead, so it only
-  overtakes the CPU backend above ~16K weights), otherwise pure Dart.
-- **`cpu`** — Apple Accelerate (BLAS/vDSP). ~2.4x faster than pure Dart on the
-  `64 -> 256 -> 16` benchmark.
-- **`metal`** — Apple GPU. The trainer is **batched**: all samples are processed
-  at once, so each epoch is a handful of `MetalPerformanceShaders` GEMMs plus
-  elementwise kernels (dispatch count is independent of the sample count). On the
-  `64 -> 256 -> 16` benchmark it trains ~3.6x faster than pure Dart, and the lead
-  grows with network size (~2x over the CPU backend at ~80K weights).
+- **`auto`** (default) — picks the best backend available for the host: on macOS
+  the CPU backend for small networks and Metal (GPU) for large ones (Metal has a
+  fixed per-epoch overhead, so it only overtakes the CPU backend above ~16K
+  weights); on Windows/Linux the CUDA (GPU) backend when available; otherwise
+  pure Dart.
+- **`cpu`** *(macOS)* — Apple Accelerate (BLAS/vDSP). ~2.4x faster than pure Dart
+  on the `64 -> 256 -> 16` benchmark.
+- **`metal`** *(macOS)* — Apple GPU. The trainer is **batched**: all samples are
+  processed at once, so each epoch is a handful of `MetalPerformanceShaders` GEMMs
+  plus elementwise kernels (dispatch count is independent of the sample count). On
+  the `64 -> 256 -> 16` benchmark it trains ~3.6x faster than pure Dart, and the
+  lead grows with network size (~2x over the CPU backend at ~80K weights).
+- **`cuda`** *(Windows/Linux)* — NVIDIA GPU. Same batched whole-epoch design as
+  Metal, with the three per-layer GEMMs on **cuBLAS** and the elementwise
+  activation/delta/update steps as CUDA kernels (see `native/cuda`). Requires the
+  CUDA Toolkit at build time and an NVIDIA GPU at run time.
 - **`none`** — forces the pure-Dart path.
+
+Requesting a backend not available on the host (e.g. `cuda` on macOS, or `metal`
+on Windows) resolves to the pure-Dart path.
 
 Unsupported networks (integer `Int32x4` signals, or an activation function other
 than `Linear`/`Sigmoid`/`SigmoidFast`/`SigmoidBoundedFast`) also fall back to
