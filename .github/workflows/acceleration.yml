@@ -1,0 +1,94 @@
+name: Acceleration CI
+
+# Native-acceleration tests, per platform. The differential tests self-skip when
+# the matching library/hardware is absent, so these jobs are always safe:
+#   * macOS  — builds the Accelerate (CPU) + Metal (GPU) dylibs and runs the
+#              `native` tests. GitHub's macOS runners have a GPU, so Metal runs
+#              for real; if it were absent the Metal group would skip.
+#   * Linux / Windows — build the CUDA library with nvcc + cuBLAS and run the
+#              `cuda` tests. GitHub's hosted runners have NO NVIDIA GPU, so the
+#              CUDA group self-skips at runtime: these jobs verify the library
+#              COMPILES, LOADS and resolves its symbols (then reports no device).
+#              On a self-hosted NVIDIA runner the same job executes the tests.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  macos_cpu_metal:
+    name: macOS (CPU + Metal)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Versions
+        run: |
+          dart --version
+          swift --version
+          uname -a
+      - name: Build native backends (Accelerate + Metal)
+        run: bash native/macos/build.sh
+      - name: Install dependencies
+        run: dart pub get
+      - name: Run acceleration tests (native)
+        run: dart test test/eneural_net_native_diff_test.dart --tags native
+
+  linux_cuda:
+    name: Linux (CUDA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Install CUDA Toolkit (nvcc + cuBLAS)
+        uses: Jimver/cuda-toolkit@v0.2.19
+        with:
+          cuda: '12.5.0'
+          method: 'network'
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas-dev"]'
+      - name: Versions
+        run: |
+          dart --version
+          nvcc --version
+          uname -a
+      - name: Build CUDA backend
+        run: bash native/cuda/build.sh
+      - name: Install dependencies
+        run: dart pub get
+      # No GPU on hosted runners: the `cuda` group self-skips after verifying the
+      # library builds, loads and resolves symbols.
+      - name: Run acceleration tests (cuda)
+        run: dart test test/eneural_net_native_diff_test.dart --tags cuda
+
+  windows_cuda:
+    name: Windows (CUDA)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      # nvcc needs the MSVC host compiler (cl.exe) on PATH.
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install CUDA Toolkit (nvcc + cuBLAS)
+        uses: Jimver/cuda-toolkit@v0.2.19
+        with:
+          cuda: '12.5.0'
+          method: 'network'
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas-dev", "visual_studio_integration"]'
+      - name: Versions
+        run: |
+          dart --version
+          nvcc --version
+      - name: Build CUDA backend
+        shell: cmd
+        run: |
+          cd native\cuda
+          call build.bat
+      - name: Install dependencies
+        run: dart pub get
+      # No GPU on hosted runners: the `cuda` group self-skips after verifying the
+      # library builds, loads and resolves symbols.
+      - name: Run acceleration tests (cuda)
+        run: dart test test/eneural_net_native_diff_test.dart --tags cuda

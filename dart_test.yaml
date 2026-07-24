@@ -1,0 +1,20 @@
+# Test tags for the native-acceleration differential tests.
+#
+# The acceleration tests self-skip when the matching native library / hardware
+# is unavailable, so they are safe to run anywhere. The tags let CI target a
+# specific backend on the platform that can actually exercise it:
+#
+#   dart test --tags native          # all acceleration tests
+#   dart test --tags cpu             # macOS Accelerate (CPU)
+#   dart test --tags metal           # macOS Metal (GPU)
+#   dart test --tags cuda            # Windows/Linux CUDA (NVIDIA GPU)
+#   dart test --exclude-tags native  # skip acceleration tests entirely
+tags:
+  native:
+    description: Native-accelerated trainer tests (any backend).
+  cpu:
+    description: Apple Accelerate (CPU) backend — macOS only.
+  metal:
+    description: Apple Metal (GPU) backend — macOS only.
+  cuda:
+    description: NVIDIA CUDA (GPU) backend — Windows/Linux only.

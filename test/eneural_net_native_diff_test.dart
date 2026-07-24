@@ -47,6 +47,15 @@ void main() {
       metalProbe.isNativeAccelerated &&
       metalProbe.activeBackend == NativeBackend.metal;
 
+  final cudaProbe = NativeRProp(
+    build(),
+    SamplesSet(xor(), subject: 'probe'),
+    backend: NativeBackend.cuda,
+  )..logEnabled = false;
+  final cudaAvailable =
+      cudaProbe.isNativeAccelerated &&
+      cudaProbe.activeBackend == NativeBackend.cuda;
+
   double maxAbsDiff(List<double> a, List<double> b) {
     var m = 0.0;
     for (var i = 0; i < a.length; ++i) {
@@ -191,6 +200,7 @@ void main() {
         expect(nativeTrainer.globalError, lessThan(1e-6));
       });
     },
+    tags: const ['native', 'cpu'],
     skip: nativeAvailable ? false : 'native library not available',
   );
 
@@ -263,7 +273,81 @@ void main() {
         }
       });
     },
+    tags: const ['native', 'metal'],
     skip: metalAvailable ? false : 'metal backend not available',
+  );
+
+  group(
+    'Native CUDA acceleration (differential vs pure Dart)',
+    () {
+      test('reports cuda backend active', () {
+        expect(cudaProbe.activeBackend, equals(NativeBackend.cuda));
+      });
+
+      test('native forward pass matches Dart activate', () {
+        final t = NativeRProp(
+          build(seed: 33),
+          SamplesSet(xor(), subject: 'xor'),
+          backend: NativeBackend.cuda,
+        )..logEnabled = false;
+        for (final s in xor()) {
+          t.ann.activate(s.input);
+          final dartOut = t.ann.outputAsDouble;
+          final nativeOut = t.activateNative(s.input);
+          expect(nativeOut, isNotNull);
+          expect(
+            maxAbsDiff(dartOut, nativeOut!),
+            lessThan(1e-4),
+            reason: 'forward output for ${s.input.values}',
+          );
+        }
+      });
+
+      test('single Backpropagation epoch matches Dart weights', () {
+        final dartTrainer = Backpropagation(
+          build(seed: 7),
+          SamplesSet(xor(), subject: 'xor'),
+        )..logEnabled = false;
+        final nativeTrainer = NativeBackpropagation(
+          build(seed: 7),
+          SamplesSet(xor(), subject: 'xor'),
+          backend: NativeBackend.cuda,
+        )..logEnabled = false;
+
+        dartTrainer.train(1, 0.0);
+        nativeTrainer.train(1, 0.0);
+
+        final diff = maxAbsDiff(
+          dartTrainer.ann.allWeights.cast<double>(),
+          nativeTrainer.ann.allWeights.cast<double>(),
+        );
+        expect(diff, lessThan(1e-4), reason: 'max |Δweight| after 1 BP epoch');
+      });
+
+      test('native iRProp+ converges on XOR', () {
+        final t = NativeRProp(
+          build(seed: 101),
+          SamplesSet(xor(), subject: 'xor'),
+          backend: NativeBackend.cuda,
+        )..logEnabled = false;
+
+        final ok = t.trainUntilGlobalError(
+          targetGlobalError: 1e-6,
+          maxEpochs: 3000,
+        );
+
+        expect(ok, isTrue);
+        expect(t.globalError, lessThan(1e-6));
+        for (final s in xor()) {
+          t.ann.activate(s.input);
+          final out = t.ann.outputAsDouble.first;
+          final expected = s.output.valuesAsDouble.first;
+          expect((out - expected).abs(), lessThan(0.05));
+        }
+      });
+    },
+    tags: const ['native', 'cuda'],
+    skip: cudaAvailable ? false : 'cuda backend not available',
   );
 
   group('Native trainer fallback (backend none == pure Dart)', () {
@@ -302,5 +386,5 @@ void main() {
 
       expect(maxDiff, equals(0.0));
     });
-  });
+  }, tags: const ['native']);
 }
