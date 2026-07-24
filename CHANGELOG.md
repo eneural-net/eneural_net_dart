@@ -1,3 +1,15 @@
+## 1.6.1
+
+- Examples: added `example/datasets/` — runnable training examples on real,
+  medium-size public datasets (UCI Optical Digits, Wine Quality regression,
+  Letter Recognition 26-class classification), each with a selectable
+  acceleration backend (`none`/`auto`/`cpu`/`metal`) that falls back to pure
+  Dart, plus shared download/caching, per-column normalization, and accuracy
+  helpers (`example/datasets/common.dart`).
+- Examples: `example/training_algorithms/` with one runnable example per
+  training algorithm, and `example/eneural_net_optimizers_example.dart` for the
+  name-based registry and JSON checkpointing.
+
 ## 1.6.0
 
 - **NEW: Broad training-algorithm library (pure Dart).** Adds many trainers
