@@ -65,7 +65,9 @@ jobs:
 
   windows_cuda:
     name: Windows (CUDA)
-    runs-on: windows-latest
+    # Pinned to the VS2022 image: CUDA 12.5's host_config rejects VS2025 (shipped
+    # on windows-latest) with "unsupported Microsoft Visual Studio version".
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
