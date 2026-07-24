@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:eneural_net/eneural_net.dart';
 import 'package:eneural_net/eneural_net_extensions.dart';
-import 'package:eneural_net/src/eneural_net_training_parameter_strategy.dart';
 import 'package:eneural_net/src/eneural_net_training_propagation.dart';
 import 'package:test/test.dart';
 

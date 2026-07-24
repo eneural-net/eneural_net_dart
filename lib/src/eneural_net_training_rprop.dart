@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:eneural_net/eneural_net.dart';
 import 'package:eneural_net/eneural_net_extensions.dart';
 
-import 'eneural_net_training_parameter_strategy.dart';
 import 'eneural_net_training_propagation.dart';
 
 /// Implementation of Resilient Backpropagation (version iRProp+).

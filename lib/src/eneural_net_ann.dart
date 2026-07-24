@@ -20,6 +20,11 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
 
   late final List<Layer<N, E, T, S>> allLayers;
 
+  /// When true, hidden layers with a `dropoutRate` apply dropout during
+  /// [activate] (inverted dropout). Trainers set this only while accumulating
+  /// gradients; it is false for inference and error evaluation. Default: false.
+  bool trainingMode = false;
+
   ANN(
     this.scale,
     Layer<N, E, T, S> inputLayer,
@@ -60,6 +65,8 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
           ),
           l.withBiasNeuron,
           l.getActivationFunction(defaultActivationFunction),
+          null,
+          l.dropoutRate,
         );
       }).toList();
     } else {
@@ -72,6 +79,10 @@ class ANN<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
       var layer = allLayers[i];
       var layerNext = allLayers[i + 1];
       layer.connectTo(layerNext, random: random);
+    }
+
+    for (var layer in allLayers) {
+      layer.annRef = this;
     }
   }
 
@@ -326,10 +337,14 @@ class HiddenLayerConfig<N extends num, E> {
   /// Activation function of the layer.
   final ActivationFunction<N, E>? activationFunction;
 
+  /// Dropout rate applied to this layer during training (0 = no dropout).
+  final double dropoutRate;
+
   HiddenLayerConfig(
     this.neurons,
     this.withBiasNeuron, [
     this.activationFunction,
+    this.dropoutRate = 0.0,
   ]);
 
   /// Returns the [activationFunction] or [def].
@@ -374,6 +389,10 @@ class Layer<N extends num, E, T extends Signal<N, E, T>, S extends Scale<N>> {
   final bool withBiasNeuron;
 
   final ActivationFunction<N, E> activationFunction;
+
+  /// Back-reference to the owning [ANN] (set during build); used by dropout to
+  /// read [ANN.trainingMode].
+  ANN<N, E, T, S>? annRef;
 
   late List<T> _weights;
 
@@ -800,15 +819,36 @@ class LayerHidden<
     extends Layer<N, E, T, S> {
   late final Layer<N, E, T, S> _nextLayerNonNull;
 
+  /// Dropout rate applied during training (0 = no dropout).
+  final double dropoutRate;
+
   LayerHidden._(
     T neurons,
     bool withBiasNeuron,
     ActivationFunction<N, E> activationFunction, [
     List<T>? weightsValues,
+    this.dropoutRate = 0.0,
   ]) : super._(neurons, withBiasNeuron, activationFunction, weightsValues);
+
+  static final Random _dropoutRandom = Random();
 
   @override
   String get layerType => 'hidden';
+
+  /// Applies inverted dropout to the real neuron outputs (not the bias slot).
+  void _applyDropout() {
+    final keep = 1.0 - dropoutRate;
+    if (keep <= 0) return;
+    final scale = 1.0 / keep;
+    final realCount = withBiasNeuron ? length - 1 : length;
+    for (var i = 0; i < realCount; ++i) {
+      if (_dropoutRandom.nextDouble() < dropoutRate) {
+        _neurons.setValue(i, _neurons.zero);
+      } else {
+        _neurons.setValue(i, _neurons.toN(_neurons.getValue(i) * scale));
+      }
+    }
+  }
 
   @override
   void connectTo(
@@ -828,6 +868,10 @@ class LayerHidden<
 
     for (var i = _neurons.entriesLength - 1; i >= 0; --i) {
       _neurons.setEntryFilteredX4(i, activationFunction);
+    }
+
+    if (dropoutRate > 0 && (annRef?.trainingMode ?? false)) {
+      _applyDropout();
     }
 
     var nextLayer = _nextLayerNonNull;

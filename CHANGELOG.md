@@ -1,3 +1,25 @@
+## 1.6.0
+
+- **NEW: Broad training-algorithm library (pure Dart).** Adds many trainers
+  beyond Backpropagation/RProp, all SIMD `Float32x4`:
+  - Gradient optimizers via a new `GradientOptimizer` seam: `SGD`
+    (+momentum/Nesterov), `Adam` (+AdamW/Nadam/AMSGrad), `RMSProp`, `AdaGrad`,
+    `AdaDelta`, `Quickprop`, `Lion`, `ResilientPropagation`
+    (RProp+/RProp-/iRProp+/iRProp-).
+  - Mini-batch / online training (`batchSize`), L2 weight decay, gradient
+    clipping, and LR schedules (step/exponential/cosine/warmup).
+  - Second-order: `ConjugateGradient`, `LBFGS`, `LevenbergMarquardt`.
+  - Population / gradient-free: `EvolutionStrategy`, `SeparableCMAES`,
+    `GeneticAlgorithm`, `ParticleSwarm`, `DifferentialEvolution`,
+    `SimulatedAnnealing`.
+  - Dropout (per hidden layer via `HiddenLayerConfig`, inverted, training-only).
+  - Name-based registry (`trainingByName`/`registeredTrainings`) and JSON
+    checkpointing (`saveTrainingCheckpoint`/`restoreTrainingCheckpoint`).
+  - New `Signal` SIMD entry ops (sqrt/reciprocal/abs/min/max/clamp/scale/sign)
+    and `Random.nextGaussian`.
+  - Additive-only to the existing pure-Dart/native/WebGPU paths (Backpropagation
+    and RProp are unchanged).
+
 ## 1.5.0
 
 - **NEW: WebGPU acceleration (browser GPU).** Whole-epoch-on-device training in

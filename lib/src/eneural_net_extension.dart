@@ -771,3 +771,22 @@ extension DurationExtension on Duration {
     }
   }
 }
+
+/// Gaussian (normal) sampling on [Random], used by population-based trainers
+/// (Evolution Strategies, CMA-ES, Differential Evolution, Simulated Annealing).
+extension RandomGaussianExtension on Random {
+  /// Returns a sample from a normal distribution with the given [mean] and
+  /// [standardDeviation] (defaults to the standard normal N(0,1)).
+  ///
+  /// Uses the Marsaglia polar method (a numerically stable Box–Muller variant).
+  double nextGaussian({double mean = 0.0, double standardDeviation = 1.0}) {
+    double u, v, s;
+    do {
+      u = nextDouble() * 2 - 1;
+      v = nextDouble() * 2 - 1;
+      s = u * u + v * v;
+    } while (s >= 1.0 || s == 0.0);
+    final multiplier = sqrt(-2.0 * log(s) / s);
+    return mean + standardDeviation * (u * multiplier);
+  }
+}

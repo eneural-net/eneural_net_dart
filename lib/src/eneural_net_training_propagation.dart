@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:eneural_net/eneural_net.dart';
 
+import 'eneural_net_extension.dart';
 import 'eneural_net_training_parameter_strategy.dart';
 
 /// Base class for propagation training algorithms (similar to Backpropagation).
@@ -23,6 +24,11 @@ abstract class Propagation<
   late final List<List<T>> _layersPreviousUpdateDelta;
   late final List<List<T>> _layersNoImprovementCounter;
   late final List<List<T>> _layersWeightsLastUpdates;
+
+  /// Extra per-weight state buffers registered by optimizer subclasses (via
+  /// [createWeightStateBuffers]); reinitialized by [reset].
+  final List<List<List<T>>> _extraStateBuffers = [];
+  final List<double> _extraStateBuffersFill = [];
 
   late final ParameterStrategy<N, E, T> _learningRateStrategy;
 
@@ -176,8 +182,111 @@ abstract class Propagation<
       }
     }
 
+    for (var b = 0; b < _extraStateBuffers.length; ++b) {
+      final fill = _extraStateBuffersFill[b];
+      for (var perNeuron in _extraStateBuffers[b]) {
+        for (var s in perNeuron) {
+          if (fill == 0.0) {
+            s.setAllEntriesEmpty();
+          } else {
+            s.setAllEntriesWithValue(s.toN(fill));
+          }
+        }
+      }
+    }
+
     _learningRateStrategy.resetValue();
     _momentumStrategy.resetValue();
+  }
+
+  /// Allocates a per-weight state buffer group with the same shape as the
+  /// network weights (per layer -> per source neuron -> Signal over the target
+  /// neurons), initialized to [fill]. The group is registered so [reset]
+  /// reinitializes it. Optimizer subclasses use this for their persistent state
+  /// (e.g. Adam's first/second moments).
+  ///
+  /// This is a protected override hook (not part of the stable public API).
+  List<List<T>> createWeightStateBuffers({double fill = 0}) {
+    final buffers = ann.allLayers.map((l) {
+      if (!l.hasNextLayer) return <T>[];
+      return List.generate(l.weights.length, (i) {
+        final s = l.weights[i].createInstanceOfSameLength();
+        if (fill != 0.0) s.setAllEntriesWithValue(s.toN(fill));
+        return s;
+      });
+    }).toList();
+    _extraStateBuffers.add(buffers);
+    _extraStateBuffersFill.add(fill);
+    return buffers;
+  }
+
+  /// Serializes the registered optimizer state buffers (for checkpointing).
+  /// Each buffer group is flattened to a list of per-source-neuron value lists
+  /// (layer-major, matching the allocation order).
+  List<List<List<double>>> saveOptimizerState() =>
+      _extraStateBuffers.map((group) {
+        final flat = <List<double>>[];
+        for (final layer in group) {
+          for (final sig in layer) {
+            flat.add(sig.valuesAsDouble);
+          }
+        }
+        return flat;
+      }).toList();
+
+  /// Restores optimizer state previously produced by [saveOptimizerState].
+  void loadOptimizerState(List<dynamic> state) {
+    for (var b = 0; b < _extraStateBuffers.length && b < state.length; ++b) {
+      final group = _extraStateBuffers[b];
+      final saved = state[b] as List;
+      var idx = 0;
+      for (final layer in group) {
+        for (final sig in layer) {
+          if (idx < saved.length) {
+            sig.setAllWithList(
+              (saved[idx] as List).map((v) => sig.toN(v as num)).toList(),
+              0,
+            );
+            sig.setExtraValuesToZero();
+          }
+          idx++;
+        }
+      }
+    }
+  }
+
+  /// Serializes the current accumulated gradients (`layer.gradients`) — the
+  /// value that becomes `previousGradient` on the next epoch's `resetGradients`.
+  /// Needed for an exact checkpoint resume of optimizers that read the previous
+  /// gradient (Quickprop, iRProp+).
+  List<List<List<double>>> saveGradients() => ann.allLayers.map((l) {
+    if (!l.hasNextLayer) return <List<double>>[];
+    return l.gradients.map((sig) => sig.valuesAsDouble).toList();
+  }).toList();
+
+  /// Restores gradients previously produced by [saveGradients].
+  void loadGradients(List<dynamic> state) {
+    final layers = ann.allLayers;
+    for (var i = 0; i < layers.length && i < state.length; ++i) {
+      final l = layers[i];
+      if (!l.hasNextLayer) continue;
+      final saved = state[i] as List;
+      final grads = l.gradients;
+      for (var n = 0; n < grads.length && n < saved.length; ++n) {
+        grads[n].setAllWithList(
+          (saved[n] as List).map((v) => grads[n].toN(v as num)).toList(),
+          0,
+        );
+        grads[n].setExtraValuesToZero();
+      }
+    }
+  }
+
+  /// Restores the epoch error-tracking used by iRProp+ backtracking (and by the
+  /// learning-rate/momentum strategies). Used when resuming from a checkpoint.
+  void restoreGlobalLearnErrors(double last, double current) {
+    _lastGlobalLearnError = last;
+    _globalLearnError = current;
   }
 
   /// Returns the current learning rate of the Backpropagation.
@@ -244,6 +353,9 @@ abstract class Propagation<
 
     var allSamplesError = 0.0;
 
+    // Enable dropout (if any layer configures it) during gradient accumulation.
+    ann.trainingMode = true;
+
     var samplesLength = samples.length;
     for (var i = samplesLength - 1; i >= 0; --i) {
       var sample = samples[i];
@@ -252,16 +364,18 @@ abstract class Propagation<
       var expected = sample.output;
 
       {
-        _backPropagateLastLayerError(lastLayer, lastIndex, expected);
+        backPropagateLastLayerError(lastLayer, lastIndex, expected);
         var outputGlobalError = _outputErrors.computeSumSquares();
         allSamplesError += outputGlobalError;
       }
 
       for (var i = allLayersLength - 2; i >= 0; --i) {
         var layer = allLayers[i];
-        _backPropagateMiddleLayerError(layer, i);
+        backPropagateMiddleLayerError(layer, i);
       }
     }
+
+    ann.trainingMode = false;
 
     var allSamplesOutputsSize = _outputErrors.length * samples.length;
     var globalLearnError = allSamplesError / allSamplesOutputsSize;
@@ -277,13 +391,13 @@ abstract class Propagation<
 
     for (var i = 0; i < allLayersLength; ++i) {
       var layer = allLayers[i];
-      _updateLayerWeights(layer, i);
+      updateLayerWeights(layer, i);
     }
 
     return false;
   }
 
-  void _backPropagateMiddleLayerError(Layer<N, E, T, S> layer, int layerIndex) {
+  void backPropagateMiddleLayerError(Layer<N, E, T, S> layer, int layerIndex) {
     var nextLayer = layer.nextLayer!;
     var activationFunction = layer.activationFunction;
 
@@ -362,7 +476,7 @@ abstract class Propagation<
     }
   }
 
-  void _backPropagateLastLayerError(
+  void backPropagateLastLayerError(
     Layer<N, E, T, S> layer,
     int layerIndex,
     T expected,
@@ -389,7 +503,7 @@ abstract class Propagation<
     }
   }
 
-  void _updateLayerWeights(Layer<N, E, T, S> layer, int layerIndex) {
+  void updateLayerWeights(Layer<N, E, T, S> layer, int layerIndex) {
     var nextLayer = layer.nextLayer;
     if (nextLayer == null) return;
 

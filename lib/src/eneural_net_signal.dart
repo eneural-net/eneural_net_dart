@@ -962,6 +962,48 @@ class SignalFloat32x4 extends Signal<double, Float32x4, SignalFloat32x4> {
   }
 
   @override
+  Float32x4 entryOperationSqrt(Float32x4 entry) => entry.sqrt();
+
+  @override
+  Float32x4 entryOperationReciprocal(Float32x4 entry) => entry.reciprocal();
+
+  @override
+  Float32x4 entryOperationAbs(Float32x4 entry) => entry.abs();
+
+  @override
+  Float32x4 entryOperationMin(Float32x4 entry1, Float32x4 entry2) =>
+      entry1.min(entry2);
+
+  @override
+  Float32x4 entryOperationMax(Float32x4 entry1, Float32x4 entry2) =>
+      entry1.max(entry2);
+
+  @override
+  Float32x4 entryOperationClamp(
+    Float32x4 entry,
+    Float32x4 lower,
+    Float32x4 upper,
+  ) => entry.clamp(lower, upper);
+
+  @override
+  Float32x4 entryOperationScale(Float32x4 entry, double value) =>
+      entry.scale(value);
+
+  @override
+  Float32x4 entryOperationScalarAdd(Float32x4 entry, double value) =>
+      entry + Float32x4.splat(value);
+
+  @override
+  Float32x4 entryOperationSign(Float32x4 entry) {
+    final zero = Float32x4.zero();
+    final one = Float32x4.splat(1.0);
+    final negOne = Float32x4.splat(-1.0);
+    final pos = entry.greaterThan(zero).select(one, zero);
+    final neg = entry.lessThan(zero).select(negOne, zero);
+    return pos + neg;
+  }
+
+  @override
   void multiplyTo(SignalFloat32x4 other, SignalFloat32x4 destiny) {
     var entries2 = other._entries;
     var entriesDst = destiny._entries;
@@ -1311,6 +1353,53 @@ abstract class Signal<N extends num, E, T extends Signal<N, E, T>>
 
   /// Sum squares of lane partially (until [size]) operation (SIMD).
   N entryOperationSumSquaresLanePartial(E entry, int size);
+
+  // Extended element-wise entry operations used by adaptive optimizers
+  // (Adam/RMSProp/AdaGrad/AdaDelta/Lion). Concrete float implementations
+  // override these (see [SignalFloat32x4]); the defaults throw so integer/custom
+  // signals are unaffected (these operations are float-only).
+
+  /// Element-wise square root (SIMD).
+  E entryOperationSqrt(E entry) => throw UnsupportedError(
+    'entryOperationSqrt not supported by $runtimeType',
+  );
+
+  /// Element-wise reciprocal `1/x` (SIMD).
+  E entryOperationReciprocal(E entry) => throw UnsupportedError(
+    'entryOperationReciprocal not supported by $runtimeType',
+  );
+
+  /// Element-wise absolute value (SIMD).
+  E entryOperationAbs(E entry) =>
+      throw UnsupportedError('entryOperationAbs not supported by $runtimeType');
+
+  /// Element-wise minimum (SIMD).
+  E entryOperationMin(E entry1, E entry2) =>
+      throw UnsupportedError('entryOperationMin not supported by $runtimeType');
+
+  /// Element-wise maximum (SIMD).
+  E entryOperationMax(E entry1, E entry2) =>
+      throw UnsupportedError('entryOperationMax not supported by $runtimeType');
+
+  /// Element-wise clamp to `[lower, upper]` (SIMD).
+  E entryOperationClamp(E entry, E lower, E upper) => throw UnsupportedError(
+    'entryOperationClamp not supported by $runtimeType',
+  );
+
+  /// Multiply an entry by a scalar [value] (SIMD).
+  E entryOperationScale(E entry, double value) => throw UnsupportedError(
+    'entryOperationScale not supported by $runtimeType',
+  );
+
+  /// Add a scalar [value] to every lane of an entry (SIMD).
+  E entryOperationScalarAdd(E entry, double value) => throw UnsupportedError(
+    'entryOperationScalarAdd not supported by $runtimeType',
+  );
+
+  /// Element-wise sign: `+1`, `-1`, or `0` per lane (SIMD).
+  E entryOperationSign(E entry) => throw UnsupportedError(
+    'entryOperationSign not supported by $runtimeType',
+  );
 
   /// Multiply all entries with [other] entries and save to [destiny].
   void multiplyTo(T other, T destiny);

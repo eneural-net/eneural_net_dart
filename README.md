@@ -239,6 +239,47 @@ runs on the Dart VM and the web.
 
 See `example/eneural_net_webgpu_example.dart`.
 
+# Training Algorithms
+
+Beyond `Backpropagation` and `RProp` (iRProp+), the library ships a broad set of
+pure-Dart trainers (SIMD `Float32x4`):
+
+- **Gradient optimizers** (`GradientOptimizer` seam, per-weight state, full SIMD):
+  `SGD` (+ classic/Nesterov momentum), `Adam` (+ `AdamW`, `Nadam`, `AMSGrad`
+  flags), `RMSProp`, `AdaGrad`, `AdaDelta`, `Quickprop`, `Lion`, and
+  `ResilientPropagation` (RProp+/RProp−/iRProp+/iRProp−). All support **mini-batch
+  / online** training (`batchSize`), **L2 weight decay**, **gradient clipping**,
+  and pluggable **learning-rate schedules** (`StepDecayStrategy`,
+  `ExponentialDecayStrategy`, `CosineAnnealingStrategy`, `WarmupStrategy`).
+- **Second-order** (finite-difference based, ideal for small nets):
+  `ConjugateGradient`, `LBFGS`, `LevenbergMarquardt`.
+- **Population / gradient-free**: `EvolutionStrategy`, `SeparableCMAES`,
+  `GeneticAlgorithm`, `ParticleSwarm`, `DifferentialEvolution`,
+  `SimulatedAnnealing`.
+- **Regularization**: dropout (per hidden layer via `HiddenLayerConfig`), L2 /
+  weight decay, gradient clipping.
+
+```dart
+var adam = Adam(ann, samplesSet, learningRate: 0.001, weightDecay: 0.01);
+adam.trainUntilGlobalError(targetGlobalError: 1e-4);
+```
+
+### Selecting by name and checkpointing
+
+Trainers can be built by name and resumed from a JSON checkpoint:
+
+```dart
+var trainer = trainingByName('adam', ann, samplesSet, params: {'learningRate': 0.01});
+
+// Save / restore (JSON-serializable) — ANN weights + optimizer state:
+var checkpoint = saveTrainingCheckpoint(trainer);
+restoreTrainingCheckpoint(trainer, checkpoint); // into a same-config trainer
+
+print(registeredTrainings()); // adam, adamw, nadam, rmsprop, lion, lbfgs, ...
+```
+
+See `example/eneural_net_optimizers_example.dart`.
+
 # Signal
 
 The class `Signal` represents the collection of numbers (including its related operations)
