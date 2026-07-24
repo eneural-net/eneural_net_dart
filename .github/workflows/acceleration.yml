@@ -42,12 +42,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - name: Install CUDA Toolkit (nvcc + cuBLAS)
+      # Full toolkit install (nvcc + cudart + cuBLAS + headers). The 'network'
+      # sub-package names differ between Linux and Windows, so a full install is
+      # the reliable cross-platform choice.
+      - name: Install CUDA Toolkit
         uses: Jimver/cuda-toolkit@v0.2.19
         with:
           cuda: '12.5.0'
-          method: 'network'
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas-dev"]'
       - name: Versions
         run: |
           dart --version
@@ -71,12 +72,11 @@ jobs:
       # nvcc needs the MSVC host compiler (cl.exe) on PATH.
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
-      - name: Install CUDA Toolkit (nvcc + cuBLAS)
+      # Full toolkit install (nvcc + cudart + cuBLAS + headers + VS integration).
+      - name: Install CUDA Toolkit
         uses: Jimver/cuda-toolkit@v0.2.19
         with:
           cuda: '12.5.0'
-          method: 'network'
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas-dev", "visual_studio_integration"]'
       - name: Versions
         run: |
           dart --version
