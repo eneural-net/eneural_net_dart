@@ -3,6 +3,8 @@
 [![pub package](https://img.shields.io/pub/v/eneural_net.svg?logo=dart&logoColor=00b9fc)](https://pub.dev/packages/eneural_net)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![Dart CI](https://github.com/eneural-net/eneural_net_dart/actions/workflows/dart.yml/badge.svg?branch=master)](https://github.com/eneural-net/eneural_net_dart/actions/workflows/dart.yml)
+[![Acceleration CI](https://github.com/eneural-net/eneural_net_dart/actions/workflows/acceleration.yml/badge.svg?branch=master)](https://github.com/eneural-net/eneural_net_dart/actions/workflows/acceleration.yml)
+[![WebGPU CI](https://github.com/eneural-net/eneural_net_dart/actions/workflows/webgpu.yml/badge.svg?branch=master)](https://github.com/eneural-net/eneural_net_dart/actions/workflows/webgpu.yml)
 [![GitHub Tag](https://img.shields.io/github/v/tag/eneural-net/eneural_net_dart?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/releases)
 [![New Commits](https://img.shields.io/github/commits-since/eneural-net/eneural_net_dart/latest?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/network)
 [![Last Commits](https://img.shields.io/github/last-commit/eneural-net/eneural_net_dart?logo=git&logoColor=white)](https://github.com/eneural-net/eneural_net_dart/commits/master)
@@ -11,8 +13,13 @@
 [![License](https://img.shields.io/github/license/eneural-net/eneural_net_dart?logo=open-source-initiative&logoColor=green)](https://github.com/eneural-net/eneural_net_dart/blob/master/LICENSE)
 
 [eNeural.net / Dart][eNeural.net] is an AI Library for efficient Artificial Neural Networks.
-The library is portable (native, JS/Web, Flutter) and the computation
+The library is portable (native, JS/Web, Wasm, Flutter) and the computation
 is capable to use SIMD (Single Instruction Multiple Data) to improve performance.
+
+Training can also be **GPU-accelerated**, while keeping the same pure-Dart API:
+[Metal](#native-acceleration-macos-cpu--metal--windowslinux-cuda) (macOS) and
+[CUDA](#native-acceleration-macos-cpu--metal--windowslinux-cuda) (Windows/Linux)
+natively, and [WebGPU](#webgpu-browser-gpu) in the browser.
 
 ## Usage
 
@@ -254,7 +261,48 @@ browser, no WebGPU support, or an unsupported network) the async methods
 transparently fall back to the synchronous pure-Dart trainer — so the same code
 runs on the Dart VM and the web.
 
+What runs on the device: the whole epoch. The weights, the optimizer state
+(iRProp+ steps/gradients) and the full sample set stay resident in GPU buffers;
+each epoch is a chain of WGSL compute passes (forward → output delta → backprop →
+gradients → weight update) over every sample at once, with a single readback for
+the epoch error. `activateWebGpu(input)` runs a single-sample forward pass on the
+GPU (the pure-Dart `ann.activate()` keeps working as usual).
+
+Requirements: a browser with WebGPU (Chrome/Edge 113+, Safari 26+, Firefox 141+
+on supported platforms), an `ANN` on `Float32x4` signals, and activation
+functions among `Linear`/`Sigmoid`/`SigmoidFast`/`SigmoidBoundedFast` — anything
+else falls back to pure Dart.
+
 See `example/eneural_net_webgpu_example.dart`.
+
+### WebGPU tests
+
+`test/eneural_net_webgpu_test.dart` runs everywhere (it covers the async API and
+the pure-Dart fallback), while
+`test/eneural_net_webgpu_integration_test.dart` is browser-only and exercises the
+real GPU path: forward-pass parity with the pure-Dart `activate()` over several
+topologies/activations, exact weight upload/download round-trips, and
+iRProp+/Backpropagation epochs compared against the pure-Dart trainers.
+
+The default `chrome` platform launches Chrome with `--disable-gpu`, which removes
+`navigator.gpu`, so `dart_test.yaml` defines two WebGPU-enabled platforms:
+
+```bash
+# Real GPU (desktop with a GPU):
+dart test test/eneural_net_webgpu_integration_test.dart -p chrome_webgpu
+
+# Software adapter (machines/CI runners without a GPU):
+dart test test/eneural_net_webgpu_integration_test.dart -p chrome_webgpu_swiftshader
+
+# Require a WebGPU device: no device -> failure instead of skip (used by CI):
+dart test test/eneural_net_webgpu_integration_test.dart -p chrome_webgpu \
+  --dart2js-args=-DWEBGPU_REQUIRED=true
+```
+
+Without a WebGPU device the integration tests self-skip, so they are safe to run
+anywhere. The `WebGPU CI` workflow runs them on Linux/Windows (SwiftShader) and
+macOS (real GPU), always with `-DWEBGPU_REQUIRED=true` so a job cannot pass
+through the fallback path, plus a job that checks the Dart VM fallback.
 
 # Training Algorithms
 
