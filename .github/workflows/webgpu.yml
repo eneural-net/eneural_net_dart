@@ -50,11 +50,18 @@ jobs:
         id: setup_chrome
         with:
           chrome-version: stable
-      - name: Versions
-        run: |
-          dart --version
-          "${{ steps.setup_chrome.outputs.chrome-path }}" --version
-        shell: bash
+      - name: Dart version
+        run: dart --version
+      - name: Chrome version
+        if: runner.os != 'Windows'
+        run: '"${{ steps.setup_chrome.outputs.chrome-path }}" --version'
+      # `chrome.exe --version` does not print-and-exit on Windows (it hangs the
+      # step), so the version is read from the executable's metadata instead.
+      - name: Chrome version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          (Get-Item "${{ steps.setup_chrome.outputs.chrome-path }}").VersionInfo.ProductVersion
       - name: Install dependencies
         run: dart pub get
       # The test runner resolves the browser through CHROME_EXECUTABLE.
