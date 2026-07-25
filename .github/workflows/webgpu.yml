@@ -40,7 +40,7 @@ jobs:
             platform: chrome_webgpu
           - os: windows-latest
             label: Windows (Chrome + SwiftShader)
-            platform: chrome_webgpu_swiftshader
+            platform: chrome_webgpu_swiftshader_win
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
