@@ -1,13 +1,14 @@
-# Test tags for the native-acceleration differential tests.
+# Test tags for the acceleration tests (native backends + WebGPU).
 #
 # The acceleration tests self-skip when the matching native library / hardware
 # is unavailable, so they are safe to run anywhere. The tags let CI target a
 # specific backend on the platform that can actually exercise it:
 #
-#   dart test --tags native          # all acceleration tests
+#   dart test --tags native          # all native acceleration tests
 #   dart test --tags cpu             # macOS Accelerate (CPU)
 #   dart test --tags metal           # macOS Metal (GPU)
 #   dart test --tags cuda            # Windows/Linux CUDA (NVIDIA GPU)
+#   dart test --tags webgpu          # browser GPU (needs a browser platform)
 #   dart test --exclude-tags native  # skip acceleration tests entirely
 tags:
   native:
@@ -18,3 +19,47 @@ tags:
     description: Apple Metal (GPU) backend — macOS only.
   cuda:
     description: NVIDIA CUDA (GPU) backend — Windows/Linux only.
+  webgpu:
+    description: WebGPU (browser GPU) backend — browser platforms only.
+
+# Chrome platforms with WebGPU enabled.
+#
+# The default `chrome` platform cannot exercise WebGPU: the test runner launches
+# headless Chrome with `--disable-gpu`, which removes `navigator.gpu`. These
+# definitions set `headless: false` (so the runner does NOT add its own
+# `--headless --disable-gpu` pair) and pass Chrome's modern headless mode
+# explicitly, which keeps the GPU stack — and therefore WebGPU — enabled.
+#
+#   # Real GPU (desktop, macOS/Windows/Linux with a GPU):
+#   dart test test/eneural_net_webgpu_integration_test.dart -p chrome_webgpu
+#
+#   # Software adapter (CI runners without a GPU):
+#   dart test test/eneural_net_webgpu_integration_test.dart \
+#     -p chrome_webgpu_swiftshader
+#
+# Add `--dart2js-args=-DWEBGPU_REQUIRED=true` to turn "no WebGPU device" from a
+# skip into a failure (used by CI, so a job cannot pass through the pure-Dart
+# fallback).
+define_platforms:
+  chrome_webgpu:
+    name: Chrome (WebGPU)
+    extends: chrome
+    settings:
+      headless: false
+      arguments: >-
+        --headless=new
+        --enable-unsafe-webgpu
+
+  chrome_webgpu_swiftshader:
+    name: Chrome (WebGPU, SwiftShader)
+    extends: chrome
+    settings:
+      headless: false
+      arguments: >-
+        --headless=new
+        --enable-unsafe-webgpu
+        --enable-unsafe-swiftshader
+        --enable-features=Vulkan
+        --use-webgpu-adapter=swiftshader
+        --use-angle=swiftshader
+        --use-gl=angle

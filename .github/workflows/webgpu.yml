@@ -1,0 +1,98 @@
+name: WebGPU CI
+
+# WebGPU (browser GPU) acceleration tests.
+#
+# `test/eneural_net_webgpu_integration_test.dart` is browser-only and exercises
+# the REAL GPU path (WGSL compute shaders through `dart:js_interop`): forward
+# pass, weight upload/download, and iRProp+/Backpropagation epochs differentially
+# checked against the pure-Dart trainer.
+#
+# Every browser job compiles with `-DWEBGPU_REQUIRED=true`, which turns a missing
+# WebGPU device into a FAILURE instead of a skip — a job can therefore never pass
+# vacuously through the pure-Dart fallback.
+#
+#   * Linux — no GPU on hosted runners, so Chrome is launched with its
+#             SwiftShader (software) WebGPU adapter.
+#   * macOS — the runner has a GPU, so Chrome uses the real device (Metal) via
+#             the `chrome_webgpu` platform.
+#
+# There is no Windows job: Chrome on the hosted Windows runners exposes no
+# WebGPU adapter at all (checked with and without the ANGLE/GL overrides), and a
+# job that silently accepted the pure-Dart fallback would be worthless. Nothing
+# is lost in coverage — the WebGPU path is Dart/JS + WGSL, identical across
+# operating systems, and both adapter kinds (software, hardware) are covered
+# above.
+#
+# The `chrome_webgpu*` platforms are defined in `dart_test.yaml`.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  webgpu_browser:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: Linux (Chrome + SwiftShader)
+            platform: chrome_webgpu_swiftshader
+          - os: macos-latest
+            label: macOS (Chrome + GPU)
+            platform: chrome_webgpu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      # Pins a current stable Chrome (WebGPU needs a recent one) instead of
+      # relying on whatever the runner image ships.
+      - uses: browser-actions/setup-chrome@v1
+        id: setup_chrome
+        with:
+          chrome-version: stable
+      - name: Dart version
+        run: dart --version
+      - name: Chrome version
+        if: runner.os != 'Windows'
+        run: '"${{ steps.setup_chrome.outputs.chrome-path }}" --version'
+      # `chrome.exe --version` does not print-and-exit on Windows (it hangs the
+      # step), so the version is read from the executable's metadata instead.
+      - name: Chrome version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          (Get-Item "${{ steps.setup_chrome.outputs.chrome-path }}").VersionInfo.ProductVersion
+      - name: Install dependencies
+        run: dart pub get
+      # The test runner resolves the browser through CHROME_EXECUTABLE.
+      - name: Run WebGPU integration tests (device required)
+        env:
+          CHROME_EXECUTABLE: ${{ steps.setup_chrome.outputs.chrome-path }}
+        run: >-
+          dart test test/eneural_net_webgpu_integration_test.dart
+          --platform ${{ matrix.platform }}
+          --dart2js-args=-DWEBGPU_REQUIRED=true
+          --reporter expanded
+
+  webgpu_fallback:
+    name: Fallback (VM + Chrome without WebGPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Install dependencies
+        run: dart pub get
+      # The WebGpu trainers must keep working where WebGPU does not exist, by
+      # falling back to the synchronous pure-Dart trainer.
+      - name: Run WebGPU trainer tests (Dart VM fallback)
+        run: dart test test/eneural_net_webgpu_test.dart --platform vm
+      # Same suites on a browser WITHOUT the WebGPU flags: the integration tests
+      # self-skip (no `-DWEBGPU_REQUIRED`) and the fallback assertions run.
+      - name: Run WebGPU trainer tests (Chrome, no WebGPU)
+        run: >-
+          dart test test/eneural_net_webgpu_test.dart
+          test/eneural_net_webgpu_integration_test.dart --platform chrome
