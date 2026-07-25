@@ -1,3 +1,31 @@
+## 1.7.1
+
+- **WebGPU integration tests (browser GPU).** New browser-only
+  `test/eneural_net_webgpu_integration_test.dart` exercising the real GPU path
+  (WGSL compute shaders through `dart:js_interop`) instead of the pure-Dart
+  fallback:
+  - Forward-pass parity with `ann.activate()` over 6 topologies: bias / no bias,
+    one and two hidden layers, and each supported activation function
+    (`Linear`/`Sigmoid`/`SigmoidFast`/`SigmoidBoundedFast`).
+  - Bit-exact weight upload/download round-trips, and Backpropagation/iRProp+
+    epochs differentially compared against the pure-Dart trainers.
+  - Multi-workgroup dispatch on larger networks, and the unsupported-network
+    fallback.
+  - Compiling with `-DWEBGPU_REQUIRED=true` turns a missing WebGPU device into a
+    failure instead of a skip, so a CI job cannot pass through the fallback path.
+- `dart_test.yaml`: new `webgpu` tag and the `chrome_webgpu` /
+  `chrome_webgpu_swiftshader` platforms — the default `chrome` platform is
+  launched with `--disable-gpu`, which removes `navigator.gpu` entirely.
+- CI: new `WebGPU CI` workflow running the integration tests with a required
+  device on macOS (real GPU) and Linux (SwiftShader software adapter), plus a
+  job covering the Dart VM / no-WebGPU fallback.
+- `test/eneural_net_webgpu_test.dart`: added pure-Dart fallback assertions (the
+  Dart VM is never accelerated, the fallback reproduces `RProp` exactly, and
+  `activateWebGpu` returns `null`).
+- Docs: README WebGPU requirements, what runs on the device, a "WebGPU tests"
+  section and CI badges; the package description now mentions WebGPU.
+- No library code changes: tests, test configuration, CI and docs only.
+
 ## 1.7.0
 
 - **NEW: CUDA (NVIDIA GPU) native backend** for Windows/Linux (`native/cuda`),
