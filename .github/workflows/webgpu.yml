@@ -11,10 +11,17 @@ name: WebGPU CI
 # WebGPU device into a FAILURE instead of a skip — a job can therefore never pass
 # vacuously through the pure-Dart fallback.
 #
-#   * Linux / Windows — no GPU on hosted runners, so Chrome is launched with its
-#                       SwiftShader (software) WebGPU adapter.
-#   * macOS           — the runner has a GPU, so Chrome uses the real device
-#                       (Metal) via the `chrome_webgpu` platform.
+#   * Linux — no GPU on hosted runners, so Chrome is launched with its
+#             SwiftShader (software) WebGPU adapter.
+#   * macOS — the runner has a GPU, so Chrome uses the real device (Metal) via
+#             the `chrome_webgpu` platform.
+#
+# There is no Windows job: Chrome on the hosted Windows runners exposes no
+# WebGPU adapter at all (checked with and without the ANGLE/GL overrides), and a
+# job that silently accepted the pure-Dart fallback would be worthless. Nothing
+# is lost in coverage — the WebGPU path is Dart/JS + WGSL, identical across
+# operating systems, and both adapter kinds (software, hardware) are covered
+# above.
 #
 # The `chrome_webgpu*` platforms are defined in `dart_test.yaml`.
 
@@ -38,9 +45,6 @@ jobs:
           - os: macos-latest
             label: macOS (Chrome + GPU)
             platform: chrome_webgpu
-          - os: windows-latest
-            label: Windows (Chrome + SwiftShader)
-            platform: chrome_webgpu_swiftshader_win
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1

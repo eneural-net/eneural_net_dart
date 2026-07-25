@@ -300,9 +300,10 @@ dart test test/eneural_net_webgpu_integration_test.dart -p chrome_webgpu \
 ```
 
 Without a WebGPU device the integration tests self-skip, so they are safe to run
-anywhere. The `WebGPU CI` workflow runs them on Linux/Windows (SwiftShader) and
-macOS (real GPU), always with `-DWEBGPU_REQUIRED=true` so a job cannot pass
-through the fallback path, plus a job that checks the Dart VM fallback.
+anywhere. The `WebGPU CI` workflow runs them on Linux (SwiftShader) and macOS
+(real GPU), always with `-DWEBGPU_REQUIRED=true` so a job cannot pass through the
+fallback path, plus a job that checks the Dart VM fallback. Chrome on the hosted
+Windows runners exposes no WebGPU adapter, so there is no Windows job.
 
 # Training Algorithms
 
