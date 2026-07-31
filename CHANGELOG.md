@@ -1,3 +1,9 @@
+## 1.7.3
+
+- Opened the `intl` upper bound further: `>=0.18.1 <0.21.0` → `>=0.18.1 <2.0.0`.
+  Future `intl` 0.21+ and 1.x releases no longer require a new `eneural_net`
+  release to be usable.
+
 ## 1.7.2
 
 - Widened the `intl` constraint from `^0.18.1` to `>=0.18.1 <0.21.0`, so
