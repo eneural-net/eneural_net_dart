@@ -1,6 +1,6 @@
 name: eneural_net
 description: AI Library to create efficient Artificial Neural Networks. Pure Dart + SIMD, portable to native, JS/Web, Wasm and Flutter, with optional Metal, CUDA and WebGPU acceleration.
-version: 1.7.1
+version: 1.7.2
 homepage: https://eneural.net/
 
 environment:
@@ -9,7 +9,7 @@ environment:
 dependencies:
   collection: ^1.19.1
   swiss_knife: ^3.1.6
-  intl: ^0.18.1
+  intl: '>=0.18.1 <0.21.0'
   path: ^1.9.0
 
 dev_dependencies:

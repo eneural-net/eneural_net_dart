@@ -1,3 +1,11 @@
+## 1.7.2
+
+- Widened the `intl` constraint from `^0.18.1` to `>=0.18.1 <0.21.0`, so
+  packages already on `intl` 0.19.x or 0.20.x (including Flutter's pinned
+  version) can depend on `eneural_net` without a resolution conflict. Only
+  `NumberFormat.decimalPattern` is used, which is unchanged across those
+  releases.
+
 ## 1.7.1
 
 - **WebGPU integration tests (browser GPU).** New browser-only
