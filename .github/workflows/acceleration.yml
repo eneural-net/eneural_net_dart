@@ -41,6 +41,8 @@ jobs:
       # `hook/build.dart` compiles both dylibs and publishes them as code assets.
       - name: Run acceleration tests (native, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags native
+      - name: Verify the build hook emitted the CPU + Metal code assets
+        run: bash .github/scripts/assert_code_assets.sh eneural_cpu eneural_metal
       # Second pass without the hook: proves the manual build scripts still work
       # and that the `DynamicLibrary.open` fallback still finds their output.
       - name: Run acceleration tests (native, via manual build + fallback)
@@ -78,6 +80,10 @@ jobs:
       # library builds, loads and resolves symbols.
       - name: Run acceleration tests (cuda, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags cuda
+      # Required: the manual build above leaves a library the loader's fallback
+      # would find, so the tests alone cannot prove the hook built anything.
+      - name: Verify the build hook emitted the CUDA code asset
+        run: bash .github/scripts/assert_code_assets.sh eneural_cuda
 
   windows_cuda:
     name: Windows (CUDA)
@@ -110,3 +116,8 @@ jobs:
       # library builds, loads and resolves symbols.
       - name: Run acceleration tests (cuda, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags cuda
+      # Required: with no GPU the `cuda` tests self-skip and the hook is silent
+      # when it skips, so the tests alone cannot prove the hook built anything.
+      - name: Verify the build hook emitted the CUDA code asset
+        shell: bash
+        run: bash .github/scripts/assert_code_assets.sh eneural_cuda
