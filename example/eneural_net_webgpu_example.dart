@@ -28,12 +28,9 @@ Future<void> main() async {
 
   var activationFunction = ActivationFunctionSigmoid();
 
-  var ann = ANN(
-    scale,
-    LayerFloat32x4(2, true, ActivationFunctionLinear()),
-    [HiddenLayerConfig(3, true, activationFunction)],
-    LayerFloat32x4(1, false, activationFunction),
-  );
+  var ann = ANN(scale, LayerFloat32x4(2, true, ActivationFunctionLinear()), [
+    HiddenLayerConfig(3, true, activationFunction),
+  ], LayerFloat32x4(1, false, activationFunction));
 
   print(ann);
 

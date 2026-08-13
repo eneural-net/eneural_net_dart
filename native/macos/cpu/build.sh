@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+#
+# Manual/debug build of the macOS Accelerate (CPU) backend into build/.
+#
+# The primary build path is `hook/build.dart`, which the Dart SDK runs
+# automatically on `dart run`/`dart test`/`dart build` and which mirrors the
+# swiftc invocation below. This script stays useful for building outside a Dart
+# command; its output is picked up by the loader's `DynamicLibrary.open`
+# fallback (see `lib/src/native/native_accelerator_io.dart`).
 
 set -e
 set -x

@@ -1,0 +1,12 @@
+# `hooks` and `code_assets` are imported only by `hook/build.dart`, never from
+# `lib/`, so dependency_validator sees them as "over-promoted" and wants them
+# moved to dev_dependencies. They cannot be: build hooks run in the resolution
+# of the packages that depend on `eneural_net`, so pub requires them under
+# `dependencies` (see dart-lang/pub `strict_dependencies`, which validates
+# `hook/build.dart` against `dependencies`).
+#
+# `ignore` is the right knob here: `exclude: [hook/**]` would hide the imports
+# entirely and the packages would then be reported as *unused* instead.
+ignore:
+  - hooks
+  - code_assets

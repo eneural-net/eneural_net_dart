@@ -1,6 +1,6 @@
 name: eneural_net
 description: AI Library to create efficient Artificial Neural Networks. Pure Dart + SIMD, portable to native, JS/Web, Wasm and Flutter, with optional Metal, CUDA and WebGPU acceleration.
-version: 1.7.3
+version: 2.0.0
 homepage: https://eneural.net/
 
 environment:
@@ -8,9 +8,14 @@ environment:
 
 dependencies:
   collection: ^1.19.1
-  swiss_knife: ^3.1.6
-  intl: '>=0.18.1 <2.0.0'
-  path: ^1.9.0
+  swiss_knife: ^3.3.14
+  intl: ">=0.20.3 <2.0.0"
+  path: ^1.9.1
+  # Used by `hook/build.dart`. These must be regular dependencies (not dev): the
+  # build hook is executed by packages/apps that depend on `eneural_net`, so it
+  # has to be part of *their* resolution too.
+  hooks: ^2.1.0
+  code_assets: ^1.2.1
 
 dev_dependencies:
   lints: ^2.1.1

@@ -47,12 +47,9 @@ Future<void> main(List<String> args) async {
   ];
   print('  train ${train.length} / test ${test.length}, 11 features\n');
 
-  final ann = ANN(
-    scale,
-    LayerFloat32x4(11, true, ActivationFunctionLinear()),
-    [HiddenLayerConfig(16, true, ActivationFunctionSigmoid())],
-    LayerFloat32x4(1, false, ActivationFunctionSigmoid()),
-  );
+  final ann = ANN(scale, LayerFloat32x4(11, true, ActivationFunctionLinear()), [
+    HiddenLayerConfig(16, true, ActivationFunctionSigmoid()),
+  ], LayerFloat32x4(1, false, ActivationFunctionSigmoid()));
 
   final trainer = NativeRProp(
     ann,

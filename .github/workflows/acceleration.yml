@@ -2,14 +2,21 @@ name: Acceleration CI
 
 # Native-acceleration tests, per platform. The differential tests self-skip when
 # the matching library/hardware is absent, so these jobs are always safe:
-#   * macOS  — builds the Accelerate (CPU) + Metal (GPU) dylibs and runs the
-#              `native` tests. GitHub's macOS runners have a GPU, so Metal runs
-#              for real; if it were absent the Metal group would skip.
+#   * macOS  — the build hook compiles the Accelerate (CPU) + Metal (GPU) dylibs
+#              and the `native` tests run against the code assets. GitHub's macOS
+#              runners have a GPU, so Metal runs for real; if it were absent the
+#              Metal group would skip. A second pass re-runs the same tests with
+#              `hook/` removed and the dylibs built by `native/macos/build.sh`,
+#              covering the manual scripts and the `DynamicLibrary.open` fallback.
 #   * Linux / Windows — build the CUDA library with nvcc + cuBLAS and run the
 #              `cuda` tests. GitHub's hosted runners have NO NVIDIA GPU, so the
 #              CUDA group self-skips at runtime: these jobs verify the library
 #              COMPILES, LOADS and resolves its symbols (then reports no device).
 #              On a self-hosted NVIDIA runner the same job executes the tests.
+#
+# Note there is no explicit "build the native library" step for the hook-driven
+# runs: `dart test` executes `hook/build.dart` itself, which is exactly what is
+# under test. `dart pub get` must therefore come first.
 
 on:
   push:
@@ -29,12 +36,20 @@ jobs:
           dart --version
           swift --version
           uname -a
-      - name: Build native backends (Accelerate + Metal)
-        run: bash native/macos/build.sh
       - name: Install dependencies
         run: dart pub get
-      - name: Run acceleration tests (native)
+      # `hook/build.dart` compiles both dylibs and publishes them as code assets.
+      - name: Run acceleration tests (native, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags native
+      - name: Verify the build hook emitted the CPU + Metal code assets
+        run: bash .github/scripts/assert_code_assets.sh eneural_cpu eneural_metal
+      # Second pass without the hook: proves the manual build scripts still work
+      # and that the `DynamicLibrary.open` fallback still finds their output.
+      - name: Run acceleration tests (native, via manual build + fallback)
+        run: |
+          rm -rf hook .dart_tool/hooks_runner .dart_tool/native_assets.yaml
+          bash native/macos/build.sh
+          dart test test/eneural_net_native_diff_test.dart --tags native
 
   linux_cuda:
     name: Linux (CUDA)
@@ -54,14 +69,21 @@ jobs:
           dart --version
           nvcc --version
           uname -a
-      - name: Build CUDA backend
+      # Smoke check that the manual script still compiles. The test run below
+      # does its own build through `hook/build.dart`; this step only keeps
+      # `native/cuda/build.sh` from rotting.
+      - name: Build CUDA backend (manual script)
         run: bash native/cuda/build.sh
       - name: Install dependencies
         run: dart pub get
       # No GPU on hosted runners: the `cuda` group self-skips after verifying the
       # library builds, loads and resolves symbols.
-      - name: Run acceleration tests (cuda)
+      - name: Run acceleration tests (cuda, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags cuda
+      # Required: the manual build above leaves a library the loader's fallback
+      # would find, so the tests alone cannot prove the hook built anything.
+      - name: Verify the build hook emitted the CUDA code asset
+        run: bash .github/scripts/assert_code_assets.sh eneural_cuda
 
   windows_cuda:
     name: Windows (CUDA)
@@ -83,14 +105,19 @@ jobs:
         run: |
           dart --version
           nvcc --version
-      - name: Build CUDA backend
-        shell: cmd
-        run: |
-          cd native\cuda
-          call build.bat
       - name: Install dependencies
         run: dart pub get
+      # `hook/build.dart` drives nvcc here. Windows is where the fallback's
+      # process-wide symbol lookup is least proven, so this job deliberately runs
+      # the hook path rather than `native\cuda\build.bat` (which stays as the
+      # documented manual build).
+      #
       # No GPU on hosted runners: the `cuda` group self-skips after verifying the
       # library builds, loads and resolves symbols.
-      - name: Run acceleration tests (cuda)
+      - name: Run acceleration tests (cuda, via build hook)
         run: dart test test/eneural_net_native_diff_test.dart --tags cuda
+      # Required: with no GPU the `cuda` tests self-skip and the hook is silent
+      # when it skips, so the tests alone cannot prove the hook built anything.
+      - name: Verify the build hook emitted the CUDA code asset
+        shell: bash
+        run: bash .github/scripts/assert_code_assets.sh eneural_cuda

@@ -170,11 +170,40 @@ training sample set are uploaded once and each epoch runs entirely in native cod
 (forward + backprop + weight update), reproducing the pure-Dart
 iRProp+/Backpropagation numerics within `float32` tolerance.
 
-Native acceleration is **optional and opt-in**. The package stays pure-Dart (it
-still publishes to pub.dev and runs on the web); if the native library isn't
-present, the trainers transparently fall back to the pure-Dart SIMD path.
+Native acceleration is **optional**. The package stays pure-Dart (it still
+publishes to pub.dev and runs on the web); if the native library can't be built
+or loaded, the trainers transparently fall back to the pure-Dart SIMD path.
 
-### Build the native libraries
+### Building the native libraries
+
+Nothing to do — the libraries are built for you.
+
+`hook/build.dart` is a [Dart build hook][dart_hooks]: the SDK runs it
+automatically on `dart run`, `dart test` and `dart build`, compiles the backend
+for the platform you are building for, and publishes each library as a *code
+asset* that `dart:ffi` resolves at runtime. The build is cached, so only the
+first run pays for it.
+
+| Platform | Built by the hook | Requires |
+| --- | --- | --- |
+| macOS | `libeneural_cpu_<arch>.dylib`, `libeneural_metal_<arch>.dylib` | `swiftc` (Xcode command line tools) |
+| Linux | `libeneural_cuda_<arch>.so` | NVIDIA CUDA Toolkit (`nvcc` + cuBLAS) on `PATH` |
+| Windows | `libeneural_cuda_<arch>.dll` | NVIDIA CUDA Toolkit (`nvcc` + cuBLAS) on `PATH`, in a VS Developer Prompt |
+
+When a toolchain is missing the hook builds nothing and the pure-Dart path is
+used; it never fails your build. CUDA is only attempted when `nvcc` is on `PATH`.
+
+> **`dart compile exe` is not supported for apps that depend on this package.**
+> The Dart SDK refuses `dart compile exe` for any project with build hooks in its
+> dependency graph. Use **`dart build cli`** instead. Likewise, `dart test
+> --compiler exe` runs without the native assets — use `dart test --compiler cli`.
+
+<details>
+<summary>Building by hand (debugging, or outside a Dart command)</summary>
+
+The scripts under `native/` mirror what the hook does. Their output is picked up
+by the loader's `DynamicLibrary.open` fallback, so a library built this way is
+used when the hook did not supply an asset:
 
 ```bash
 # macOS (CPU + Metal):
@@ -189,6 +218,13 @@ bash native/cuda/build.sh    # Linux
 # produces (git-ignored):
 #   native/cuda/build/libeneural_cuda_<arch>.{dll,so}
 ```
+
+Note that this fallback only searches the working directory, so it applies to
+development inside a checkout, not to consuming the package from the pub cache.
+
+</details>
+
+[dart_hooks]: https://dart.dev/tools/hooks
 
 ### Use an accelerated trainer
 
@@ -226,7 +262,8 @@ Backend selection:
 - **`cuda`** *(Windows/Linux)* — NVIDIA GPU. Same batched whole-epoch design as
   Metal, with the three per-layer GEMMs on **cuBLAS** and the elementwise
   activation/delta/update steps as CUDA kernels (see `native/cuda`). Requires the
-  CUDA Toolkit at build time and an NVIDIA GPU at run time.
+  CUDA Toolkit at build time (the build hook skips CUDA when `nvcc` is not on
+  `PATH`) and an NVIDIA GPU at run time.
 - **`none`** — forces the pure-Dart path.
 
 Requesting a backend not available on the host (e.g. `cuda` on macOS, or `metal`

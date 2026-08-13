@@ -62,7 +62,11 @@ jobs:
           verbose: true
 
 
-  test_exe:
+  # AOT-compiled tests. Uses `--compiler cli` rather than `--compiler exe`:
+  # `exe` compiles the test bootstrap in a temp directory outside the package,
+  # so build hooks never run and the native code assets are silently absent.
+  # `cli` goes through `dart build cli`, which does run hooks.
+  test_cli:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -75,8 +79,8 @@ jobs:
         run: dart pub get
       - name: Upgrade dependencies
         run: dart pub upgrade
-      - name: Run tests (exe)
-        run: dart test --compiler exe
+      - name: Run tests (cli/AOT)
+        run: dart test --compiler cli
 
 
   test_chrome:
