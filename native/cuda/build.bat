@@ -1,6 +1,12 @@
 @echo off
-REM Build the eneural_net CUDA backend on Windows into build\.
+REM Manual/debug build of the eneural_net CUDA backend on Windows into build\.
 REM Requires the NVIDIA CUDA Toolkit (nvcc + cuBLAS) on PATH.
+REM
+REM The primary build path is `hook\build.dart`, which the Dart SDK runs
+REM automatically on `dart run`/`dart test`/`dart build` and which mirrors the
+REM nvcc invocation below. This script stays useful for building outside a Dart
+REM command; its output is picked up by the loader's `DynamicLibrary.open`
+REM fallback (see `lib\src\native\native_accelerator_io.dart`).
 
 setlocal enabledelayedexpansion
 

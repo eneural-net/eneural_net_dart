@@ -30,6 +30,12 @@ coexists with the CPU/Metal backends.
 
 ## Build
 
+Normally you don't: `hook/build.dart` compiles this backend automatically on
+`dart run`/`dart test`/`dart build` whenever `nvcc` is on `PATH`, and publishes
+the result as the `package:eneural_net/eneural_cuda` code asset. The recipes
+below are for building by hand — debugging a kernel, or producing the library
+outside a Dart command.
+
 **Windows** (Developer Command Prompt / `nvcc` on `PATH`):
 
 ```bat
@@ -49,8 +55,11 @@ cmake -S . -B build && cmake --build build --config Release
 ```
 
 Each produces `build/libeneural_cuda_<arch>.{dll,so}` (`<arch>` = `x86_64` or
-`arm64`). The Dart loader (`lib/src/native/native_accelerator_io.dart`) searches
-the project root and `native/cuda/build/` for that file. Request it from Dart with
+`arm64`). The Dart loader (`lib/src/native/native_accelerator_io.dart`) resolves
+the backend in two steps: first through the code asset published by the build
+hook, and — only if no library resolved at all — by searching the project root
+and `native/cuda/build/` and `DynamicLibrary.open`ing what it finds. That second
+step is what picks up a hand-built library. Request the backend from Dart with
 `NativeBackend.cuda` (or `NativeBackend.auto` on a non-macOS host):
 
 ```dart

@@ -108,10 +108,27 @@ int _weightsOf(NativeNetworkSpec spec) {
 // Library loading
 // ============================================================
 
+/// Asset IDs of the native libraries emitted by `hook/build.dart`.
+///
+/// The build hook compiles the backend for the current target and publishes it
+/// under these IDs, which the `@Native` bindings below resolve against. When an
+/// asset is absent — no toolchain on the build machine, or a command that does
+/// not run build hooks — the FFI resolver throws an `ArgumentError` on the first
+/// call and [_CpuLibrary.load] (and friends) fall back to searching for a
+/// locally built library, see [_findLibraryFile].
+const String _cpuAssetId = 'package:eneural_net/eneural_cpu';
+const String _metalAssetId = 'package:eneural_net/eneural_metal';
+const String _cudaAssetId = 'package:eneural_net/eneural_cuda';
+
 String get _nativeArch =>
     Platform.version.contains('arm64') ? 'arm64' : 'x86_64';
 
 /// Searches known locations for [fileNames] and returns the first existing one.
+///
+/// This is the fallback for when `hook/build.dart` did not supply a code asset:
+/// a library built by hand with the scripts under `native/`, or a prebuilt one
+/// dropped next to the project. Only the working directory is searched, so it
+/// covers development inside a checkout, not consumption from the pub cache.
 File? _findLibraryFile(List<String> fileNames) {
   final current = Directory.current.path;
   final candidates = <String>[
@@ -130,6 +147,42 @@ File? _findLibraryFile(List<String> fileNames) {
   return null;
 }
 
+/// Probes a backend, trying the code asset first and a locally built library
+/// second.
+///
+/// [probe] calls the backend's `available()` binding, which resolves through the
+/// asset published by `hook/build.dart`. Two outcomes are distinct and matter:
+///
+/// * it *throws* — the FFI resolver found the symbol neither in the asset table
+///   nor anywhere in the process, i.e. there is no library at all. That is the
+///   only case worth falling back from.
+/// * it *returns* — the library is loaded; the boolean is the backend's own
+///   verdict on the hardware (no Metal device, no CUDA driver, ...).
+///
+/// The fallback `dlopen`s a locally built library so that the resolver's
+/// process-wide lookup — its last resort after the asset table — finds the
+/// symbols on the retry.
+bool _loadBackend({
+  required bool Function() probe,
+  required List<String> fallbackFileNames,
+}) {
+  try {
+    return probe();
+  } catch (_) {
+    // No asset: fall through to a library built by the scripts under `native/`.
+  }
+
+  final file = _findLibraryFile(fallbackFileNames);
+  if (file == null) return false;
+
+  try {
+    DynamicLibrary.open(file.path);
+    return probe();
+  } catch (_) {
+    return false;
+  }
+}
+
 class _CpuLibrary {
   static final _CpuLibrary instance = _CpuLibrary._();
   _CpuLibrary._();
@@ -141,20 +194,13 @@ class _CpuLibrary {
     if (cached != null) return cached;
 
     final arch = _nativeArch;
-    final file = _findLibraryFile([
-      'libeneural_cpu_$arch.dylib',
-      p.join('macos', 'cpu', 'build', 'libeneural_cpu_$arch.dylib'),
-    ]);
-
-    if (file == null) return _loaded = false;
-
-    try {
-      DynamicLibrary.open(file.path);
-      final available = _EnnCpu.available() == 1;
-      return _loaded = available;
-    } catch (_) {
-      return _loaded = false;
-    }
+    return _loaded = _loadBackend(
+      probe: () => _EnnCpu.available() == 1,
+      fallbackFileNames: [
+        'libeneural_cpu_$arch.dylib',
+        p.join('macos', 'cpu', 'build', 'libeneural_cpu_$arch.dylib'),
+      ],
+    );
   }
 }
 
@@ -169,21 +215,14 @@ class _MetalLibrary {
     if (cached != null) return cached;
 
     final arch = _nativeArch;
-    final file = _findLibraryFile([
-      'libeneural_metal_$arch.dylib',
-      p.join('macos', 'metal', 'build', 'libeneural_metal_$arch.dylib'),
-    ]);
-
-    if (file == null) return _loaded = false;
-
-    try {
-      DynamicLibrary.open(file.path);
-      // Probe the device (fails gracefully under Rosetta / headless).
-      final available = _EnnMetal.available() == 1;
-      return _loaded = available;
-    } catch (_) {
-      return _loaded = false;
-    }
+    return _loaded = _loadBackend(
+      // Probes the device too (fails gracefully under Rosetta / headless).
+      probe: () => _EnnMetal.available() == 1,
+      fallbackFileNames: [
+        'libeneural_metal_$arch.dylib',
+        p.join('macos', 'metal', 'build', 'libeneural_metal_$arch.dylib'),
+      ],
+    );
   }
 }
 
@@ -201,21 +240,14 @@ class _CudaLibrary {
     // Windows ships a .dll, Linux a .so; look for both next to the project and
     // under native/cuda/build/.
     final ext = Platform.isWindows ? 'dll' : 'so';
-    final file = _findLibraryFile([
-      'libeneural_cuda_$arch.$ext',
-      p.join('cuda', 'build', 'libeneural_cuda_$arch.$ext'),
-    ]);
-
-    if (file == null) return _loaded = false;
-
-    try {
-      DynamicLibrary.open(file.path);
-      // Probe for an actual CUDA device (fails gracefully with no GPU / driver).
-      final available = _EnnCuda.available() == 1;
-      return _loaded = available;
-    } catch (_) {
-      return _loaded = false;
-    }
+    return _loaded = _loadBackend(
+      // Probes for an actual CUDA device (fails gracefully with no GPU/driver).
+      probe: () => _EnnCuda.available() == 1,
+      fallbackFileNames: [
+        'libeneural_cuda_$arch.$ext',
+        p.join('cuda', 'build', 'libeneural_cuda_$arch.$ext'),
+      ],
+    );
   }
 }
 
@@ -224,7 +256,11 @@ class _CudaLibrary {
 // ============================================================
 
 class _EnnCpu {
-  @Native<Int32 Function()>(symbol: 'enn_cpu_available', isLeaf: true)
+  @Native<Int32 Function()>(
+    assetId: _cpuAssetId,
+    symbol: 'enn_cpu_available',
+    isLeaf: true,
+  )
   external static int available();
 
   @Native<
@@ -236,7 +272,7 @@ class _EnnCpu {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_cpu_create_network', isLeaf: true)
+  >(assetId: _cpuAssetId, symbol: 'enn_cpu_create_network', isLeaf: true)
   external static Pointer<Void> createNetwork(
     int numLayers,
     Pointer<Int32> neuronCounts,
@@ -246,16 +282,22 @@ class _EnnCpu {
     Pointer<Float> flatSpots,
   );
 
-  @Native<Void Function(Pointer<Void>)>(symbol: 'enn_cpu_destroy', isLeaf: true)
+  @Native<Void Function(Pointer<Void>)>(
+    assetId: _cpuAssetId,
+    symbol: 'enn_cpu_destroy',
+    isLeaf: true,
+  )
   external static void destroy(Pointer<Void> net);
 
   @Native<Int32 Function(Pointer<Void>)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_weights_length',
     isLeaf: true,
   )
   external static int weightsLength(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_set_weights',
     isLeaf: true,
   )
@@ -266,6 +308,7 @@ class _EnnCpu {
   );
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_get_weights',
     isLeaf: true,
   )
@@ -284,7 +327,7 @@ class _EnnCpu {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_cpu_set_samples', isLeaf: true)
+  >(assetId: _cpuAssetId, symbol: 'enn_cpu_set_samples', isLeaf: true)
   external static void setSamples(
     Pointer<Void> net,
     int numSamples,
@@ -295,12 +338,14 @@ class _EnnCpu {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_config_backprop',
     isLeaf: true,
   )
   external static void configBackprop(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Float, Float, Float, Float, Float)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_config_rprop',
     isLeaf: true,
   )
@@ -314,12 +359,14 @@ class _EnnCpu {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_reset_optimizer',
     isLeaf: true,
   )
   external static void resetOptimizer(Pointer<Void> net);
 
   @Native<Float Function(Pointer<Void>, Float, Float, Float)>(
+    assetId: _cpuAssetId,
     symbol: 'enn_cpu_run_epoch',
     isLeaf: true,
   )
@@ -332,7 +379,7 @@ class _EnnCpu {
 
   @Native<
     Void Function(Pointer<Void>, Pointer<Float>, Int32, Pointer<Float>, Int32)
-  >(symbol: 'enn_cpu_activate', isLeaf: true)
+  >(assetId: _cpuAssetId, symbol: 'enn_cpu_activate', isLeaf: true)
   external static void activate(
     Pointer<Void> net,
     Pointer<Float> input,
@@ -455,7 +502,11 @@ class _CpuAccelerator implements NativeAccelerator {
 // ============================================================
 
 class _EnnMetal {
-  @Native<Int32 Function()>(symbol: 'enn_metal_available', isLeaf: true)
+  @Native<Int32 Function()>(
+    assetId: _metalAssetId,
+    symbol: 'enn_metal_available',
+    isLeaf: true,
+  )
   external static int available();
 
   @Native<
@@ -467,7 +518,7 @@ class _EnnMetal {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_metal_create_network', isLeaf: true)
+  >(assetId: _metalAssetId, symbol: 'enn_metal_create_network', isLeaf: true)
   external static Pointer<Void> createNetwork(
     int numLayers,
     Pointer<Int32> neuronCounts,
@@ -478,18 +529,21 @@ class _EnnMetal {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_destroy',
     isLeaf: true,
   )
   external static void destroy(Pointer<Void> net);
 
   @Native<Int32 Function(Pointer<Void>)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_weights_length',
     isLeaf: true,
   )
   external static int weightsLength(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_set_weights',
     isLeaf: true,
   )
@@ -500,6 +554,7 @@ class _EnnMetal {
   );
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_get_weights',
     isLeaf: true,
   )
@@ -518,7 +573,7 @@ class _EnnMetal {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_metal_set_samples', isLeaf: true)
+  >(assetId: _metalAssetId, symbol: 'enn_metal_set_samples', isLeaf: true)
   external static void setSamples(
     Pointer<Void> net,
     int numSamples,
@@ -529,12 +584,14 @@ class _EnnMetal {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_config_backprop',
     isLeaf: true,
   )
   external static void configBackprop(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Float, Float, Float, Float, Float)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_config_rprop',
     isLeaf: true,
   )
@@ -548,12 +605,14 @@ class _EnnMetal {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_reset_optimizer',
     isLeaf: true,
   )
   external static void resetOptimizer(Pointer<Void> net);
 
   @Native<Float Function(Pointer<Void>, Float, Float, Float)>(
+    assetId: _metalAssetId,
     symbol: 'enn_metal_run_epoch',
     isLeaf: true,
   )
@@ -566,7 +625,7 @@ class _EnnMetal {
 
   @Native<
     Void Function(Pointer<Void>, Pointer<Float>, Int32, Pointer<Float>, Int32)
-  >(symbol: 'enn_metal_activate', isLeaf: true)
+  >(assetId: _metalAssetId, symbol: 'enn_metal_activate', isLeaf: true)
   external static void activate(
     Pointer<Void> net,
     Pointer<Float> input,
@@ -689,7 +748,11 @@ class _MetalAccelerator implements NativeAccelerator {
 // ============================================================
 
 class _EnnCuda {
-  @Native<Int32 Function()>(symbol: 'enn_cuda_available', isLeaf: true)
+  @Native<Int32 Function()>(
+    assetId: _cudaAssetId,
+    symbol: 'enn_cuda_available',
+    isLeaf: true,
+  )
   external static int available();
 
   @Native<
@@ -701,7 +764,7 @@ class _EnnCuda {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_cuda_create_network', isLeaf: true)
+  >(assetId: _cudaAssetId, symbol: 'enn_cuda_create_network', isLeaf: true)
   external static Pointer<Void> createNetwork(
     int numLayers,
     Pointer<Int32> neuronCounts,
@@ -712,18 +775,21 @@ class _EnnCuda {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_destroy',
     isLeaf: true,
   )
   external static void destroy(Pointer<Void> net);
 
   @Native<Int32 Function(Pointer<Void>)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_weights_length',
     isLeaf: true,
   )
   external static int weightsLength(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_set_weights',
     isLeaf: true,
   )
@@ -734,6 +800,7 @@ class _EnnCuda {
   );
 
   @Native<Void Function(Pointer<Void>, Pointer<Float>, Int32)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_get_weights',
     isLeaf: true,
   )
@@ -752,7 +819,7 @@ class _EnnCuda {
       Pointer<Float>,
       Pointer<Float>,
     )
-  >(symbol: 'enn_cuda_set_samples', isLeaf: true)
+  >(assetId: _cudaAssetId, symbol: 'enn_cuda_set_samples', isLeaf: true)
   external static void setSamples(
     Pointer<Void> net,
     int numSamples,
@@ -763,12 +830,14 @@ class _EnnCuda {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_config_backprop',
     isLeaf: true,
   )
   external static void configBackprop(Pointer<Void> net);
 
   @Native<Void Function(Pointer<Void>, Float, Float, Float, Float, Float)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_config_rprop',
     isLeaf: true,
   )
@@ -782,12 +851,14 @@ class _EnnCuda {
   );
 
   @Native<Void Function(Pointer<Void>)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_reset_optimizer',
     isLeaf: true,
   )
   external static void resetOptimizer(Pointer<Void> net);
 
   @Native<Float Function(Pointer<Void>, Float, Float, Float)>(
+    assetId: _cudaAssetId,
     symbol: 'enn_cuda_run_epoch',
     isLeaf: true,
   )
@@ -800,7 +871,7 @@ class _EnnCuda {
 
   @Native<
     Void Function(Pointer<Void>, Pointer<Float>, Int32, Pointer<Float>, Int32)
-  >(symbol: 'enn_cuda_activate', isLeaf: true)
+  >(assetId: _cudaAssetId, symbol: 'enn_cuda_activate', isLeaf: true)
   external static void activate(
     Pointer<Void> net,
     Pointer<Float> input,

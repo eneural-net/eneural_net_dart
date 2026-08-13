@@ -1,3 +1,47 @@
+## 2.0.0
+
+- **Dart build hooks: the native libraries now build themselves.** A new
+  `hook/build.dart` is run automatically by the Dart SDK on `dart run`,
+  `dart test` and `dart build`. It compiles the native backend for the platform
+  being built for and publishes each library as a `CodeAsset`, which the
+  `dart:ffi` `@Native` bindings resolve at runtime:
+
+  | Platform | Assets | Toolchain |
+  | --- | --- | --- |
+  | macOS | `package:eneural_net/eneural_cpu`, `package:eneural_net/eneural_metal` | `swiftc` |
+  | Linux/Windows | `package:eneural_net/eneural_cuda` | `nvcc` + cuBLAS, only when `nvcc` is on `PATH` |
+
+  Native acceleration therefore works for consumers of the package, not just
+  inside a checkout of this repository — previously the libraries had to be
+  built by hand and were only found relative to the working directory.
+
+  The hook never fails a build: when a toolchain is missing or a compile fails it
+  emits no asset and training falls back to the pure-Dart SIMD path.
+
+- **BREAKING — `dart compile exe` no longer works for apps depending on
+  `eneural_net`.** The Dart SDK rejects `dart compile exe` for any project with
+  build hooks in its dependency graph (`'dart compile' does not support build
+  hooks, use 'dart build' instead.`), regardless of platform and even where this
+  hook produces nothing. Migrate to **`dart build cli`**.
+
+  Similarly, `dart test --compiler exe` runs without the native code assets,
+  because it compiles the test bootstrap outside the package. Use
+  `dart test --compiler cli`.
+
+- **BREAKING — new required dependencies.** `hooks` and `code_assets` are now
+  regular dependencies (build hooks run inside the resolution of depending
+  packages, so they cannot be dev dependencies).
+
+- Library loading is now two-stage: the code asset first, and — only when no
+  library resolved at all — the previous working-directory search plus
+  `DynamicLibrary.open`. Libraries built by hand with the scripts under `native/`
+  keep working unchanged.
+
+- The manual build scripts (`native/macos/build.sh`, `native/cuda/build.sh`,
+  `native/cuda/build.bat`, `native/cuda/CMakeLists.txt`) are retained for
+  local/debug builds. The build hook is the primary path and mirrors their
+  compiler flags.
+
 ## 1.7.3
 
 - Opened the `intl` upper bound further: `>=0.18.1 <0.21.0` → `>=0.18.1 <2.0.0`.
