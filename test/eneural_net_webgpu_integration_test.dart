@@ -348,165 +348,143 @@ void main() {
       );
     });
 
-    test(
-      'iRProp+ converges on XOR on the GPU',
-      () async {
-        if (!onGpu()) return;
+    test('iRProp+ converges on XOR on the GPU', () async {
+      if (!onGpu()) return;
 
-        final t = WebGpuRProp(
-          build(seed: 101),
-          SamplesSet(xor(), subject: 'xor'),
-        )..logEnabled = false;
+      final t = WebGpuRProp(build(seed: 101), SamplesSet(xor(), subject: 'xor'))
+        ..logEnabled = false;
 
-        final ok = await t.trainUntilGlobalErrorAsync(
-          targetGlobalError: 1e-5,
-          maxEpochs: 5000,
-        );
+      final ok = await t.trainUntilGlobalErrorAsync(
+        targetGlobalError: 1e-5,
+        maxEpochs: 5000,
+      );
 
-        expect(ok, isTrue);
-        expect(t.globalError, lessThan(1e-5));
+      expect(ok, isTrue);
+      expect(t.globalError, lessThan(1e-5));
 
-        for (final s in xor()) {
-          t.ann.activate(s.input);
-          final out = t.ann.outputAsDouble.first;
-          final expectedOut = s.output.valuesAsDouble.first;
-          expect((out - expectedOut).abs(), lessThan(0.05));
-        }
-      },
-      timeout: const Timeout(Duration(minutes: 3)),
-    );
+      for (final s in xor()) {
+        t.ann.activate(s.input);
+        final out = t.ann.outputAsDouble.first;
+        final expectedOut = s.output.valuesAsDouble.first;
+        expect((out - expectedOut).abs(), lessThan(0.05));
+      }
+    }, timeout: const Timeout(Duration(minutes: 3)));
 
-    test(
-      'GPU and Dart iRProp+ both converge below the target',
-      () async {
-        if (!onGpu()) return;
+    test('GPU and Dart iRProp+ both converge below the target', () async {
+      if (!onGpu()) return;
 
-        final dartTrainer = RProp(
-          build(seed: 55),
-          SamplesSet(xor(), subject: 'xor'),
-        )..logEnabled = false;
-        final gpuTrainer = WebGpuRProp(
-          build(seed: 55),
-          SamplesSet(xor(), subject: 'xor'),
-        )..logEnabled = false;
+      final dartTrainer = RProp(
+        build(seed: 55),
+        SamplesSet(xor(), subject: 'xor'),
+      )..logEnabled = false;
+      final gpuTrainer = WebGpuRProp(
+        build(seed: 55),
+        SamplesSet(xor(), subject: 'xor'),
+      )..logEnabled = false;
 
-        final okDart = dartTrainer.trainUntilGlobalError(
-          targetGlobalError: 1e-5,
-          maxEpochs: 3000,
-        );
-        final okGpu = await gpuTrainer.trainUntilGlobalErrorAsync(
-          targetGlobalError: 1e-5,
-          maxEpochs: 3000,
-        );
+      final okDart = dartTrainer.trainUntilGlobalError(
+        targetGlobalError: 1e-5,
+        maxEpochs: 3000,
+      );
+      final okGpu = await gpuTrainer.trainUntilGlobalErrorAsync(
+        targetGlobalError: 1e-5,
+        maxEpochs: 3000,
+      );
 
-        expect(okDart, isTrue);
-        expect(okGpu, isTrue);
-        expect(dartTrainer.globalError, lessThan(1e-5));
-        expect(gpuTrainer.globalError, lessThan(1e-5));
-      },
-      timeout: const Timeout(Duration(minutes: 3)),
-    );
+      expect(okDart, isTrue);
+      expect(okGpu, isTrue);
+      expect(dartTrainer.globalError, lessThan(1e-5));
+      expect(gpuTrainer.globalError, lessThan(1e-5));
+    }, timeout: const Timeout(Duration(minutes: 3)));
 
-    test(
-      'Backpropagation on the GPU reduces the error',
-      () async {
-        if (!onGpu()) return;
+    test('Backpropagation on the GPU reduces the error', () async {
+      if (!onGpu()) return;
 
-        final t = WebGpuBackpropagation(
-          build(seed: 7),
-          SamplesSet(xor(), subject: 'xor'),
-        )..logEnabled = false;
+      final t = WebGpuBackpropagation(
+        build(seed: 7),
+        SamplesSet(xor(), subject: 'xor'),
+      )..logEnabled = false;
 
-        final before = t.ann.computeSamplesGlobalError(xor());
-        final after = await t.trainAsync(200, 0.0);
+      final before = t.ann.computeSamplesGlobalError(xor());
+      final after = await t.trainAsync(200, 0.0);
 
-        expect(after, lessThan(before));
-      },
-      timeout: const Timeout(Duration(minutes: 2)),
-    );
+      expect(after, lessThan(before));
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   group('WebGPU training at scale (multi-workgroup dispatch)', () {
-    test(
-      'a larger multi-layer network trains on the GPU',
-      () async {
-        if (!onGpu()) return;
+    test('a larger multi-layer network trains on the GPU', () async {
+      if (!onGpu()) return;
 
-        // 12 inputs, 2 hidden layers and 3 outputs over 40 samples: every
-        // dimension (weights, neurons, samples) is above the shader workgroup
-        // sizes (64 / 8x8), so more than one workgroup is dispatched.
-        final samples = randomSamples(40, 12, 3, seed: 71);
-        final ann = ANN(
-          scale,
-          LayerFloat32x4(12, true, ActivationFunctionLinear()),
-          [HiddenLayerConfig(24, true), HiddenLayerConfig(16, true)],
-          LayerFloat32x4(3, false),
-          random: Random(73),
-        );
+      // 12 inputs, 2 hidden layers and 3 outputs over 40 samples: every
+      // dimension (weights, neurons, samples) is above the shader workgroup
+      // sizes (64 / 8x8), so more than one workgroup is dispatched.
+      final samples = randomSamples(40, 12, 3, seed: 71);
+      final ann = ANN(
+        scale,
+        LayerFloat32x4(12, true, ActivationFunctionLinear()),
+        [HiddenLayerConfig(24, true), HiddenLayerConfig(16, true)],
+        LayerFloat32x4(3, false),
+        random: Random(73),
+      );
 
-        final t = WebGpuRProp(ann, SamplesSet(samples, subject: 'random'))
-          ..logEnabled = false;
+      final t = WebGpuRProp(ann, SamplesSet(samples, subject: 'random'))
+        ..logEnabled = false;
 
-        expect(await t.isWebGpuAccelerated, isTrue);
+      expect(await t.isWebGpuAccelerated, isTrue);
 
-        final before = ann.computeSamplesGlobalError(samples);
-        final after = await t.trainAsync(300, 0.0);
+      final before = ann.computeSamplesGlobalError(samples);
+      final after = await t.trainAsync(300, 0.0);
 
-        expect(
-          after,
-          lessThan(before),
-          reason: 'GPU training must reduce the global error',
-        );
+      expect(
+        after,
+        lessThan(before),
+        reason: 'GPU training must reduce the global error',
+      );
 
-        // The GPU forward pass must still match the Dart one after training.
-        for (final s in samples.take(4)) {
-          ann.activate(s.input);
-          final dartOut = ann.outputAsDouble;
-          final gpuOut = await t.activateWebGpu(s.input);
-          expect(maxAbsDiff(dartOut, gpuOut!), lessThan(1e-4));
-        }
-      },
-      timeout: const Timeout(Duration(minutes: 5)),
-    );
+      // The GPU forward pass must still match the Dart one after training.
+      for (final s in samples.take(4)) {
+        ann.activate(s.input);
+        final dartOut = ann.outputAsDouble;
+        final gpuOut = await t.activateWebGpu(s.input);
+        expect(maxAbsDiff(dartOut, gpuOut!), lessThan(1e-4));
+      }
+    }, timeout: const Timeout(Duration(minutes: 5)));
 
-    test(
-      'GPU and Dart agree on a larger network after a few epochs',
-      () async {
-        if (!onGpu()) return;
+    test('GPU and Dart agree on a larger network after a few epochs', () async {
+      if (!onGpu()) return;
 
-        final samples = randomSamples(24, 8, 2, seed: 83);
+      final samples = randomSamples(24, 8, 2, seed: 83);
 
-        ANNF larger() => ANN(
-          scale,
-          LayerFloat32x4(8, true, ActivationFunctionLinear()),
-          [HiddenLayerConfig(16, true)],
-          LayerFloat32x4(2, false),
-          random: Random(89),
-        );
+      ANNF larger() => ANN(
+        scale,
+        LayerFloat32x4(8, true, ActivationFunctionLinear()),
+        [HiddenLayerConfig(16, true)],
+        LayerFloat32x4(2, false),
+        random: Random(89),
+      );
 
-        final dartTrainer = Backpropagation(
-          larger(),
-          SamplesSet(samples, subject: 'random'),
-        )..logEnabled = false;
-        final gpuTrainer = WebGpuBackpropagation(
-          larger(),
-          SamplesSet(samples, subject: 'random'),
-        )..logEnabled = false;
+      final dartTrainer = Backpropagation(
+        larger(),
+        SamplesSet(samples, subject: 'random'),
+      )..logEnabled = false;
+      final gpuTrainer = WebGpuBackpropagation(
+        larger(),
+        SamplesSet(samples, subject: 'random'),
+      )..logEnabled = false;
 
-        dartTrainer.train(5, 0.0);
-        await gpuTrainer.trainAsync(5, 0.0);
+      dartTrainer.train(5, 0.0);
+      await gpuTrainer.trainAsync(5, 0.0);
 
-        expect(
-          maxAbsDiff(
-            dartTrainer.ann.allWeights.cast<double>(),
-            gpuTrainer.ann.allWeights.cast<double>(),
-          ),
-          lessThan(1e-3),
-          reason: 'max |Δweight| after 5 epochs on a 8-16-2 network',
-        );
-      },
-      timeout: const Timeout(Duration(minutes: 3)),
-    );
+      expect(
+        maxAbsDiff(
+          dartTrainer.ann.allWeights.cast<double>(),
+          gpuTrainer.ann.allWeights.cast<double>(),
+        ),
+        lessThan(1e-3),
+        reason: 'max |Δweight| after 5 epochs on a 8-16-2 network',
+      );
+    }, timeout: const Timeout(Duration(minutes: 3)));
   });
 
   group('WebGPU fallback in the browser', () {

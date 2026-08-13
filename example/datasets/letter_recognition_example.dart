@@ -57,12 +57,9 @@ Future<void> main(List<String> args) async {
     '16 features, 26 classes\n',
   );
 
-  final ann = ANN(
-    scale,
-    LayerFloat32x4(16, true, ActivationFunctionLinear()),
-    [HiddenLayerConfig(40, true, ActivationFunctionSigmoid())],
-    LayerFloat32x4(26, false, ActivationFunctionSigmoid()),
-  );
+  final ann = ANN(scale, LayerFloat32x4(16, true, ActivationFunctionLinear()), [
+    HiddenLayerConfig(40, true, ActivationFunctionSigmoid()),
+  ], LayerFloat32x4(26, false, ActivationFunctionSigmoid()));
 
   final trainer = NativeRProp(
     ann,
